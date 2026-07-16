@@ -1,6 +1,6 @@
 <div align="center">
   <img src="docs/icon-animated.svg" alt="EdgeLedger Icon" width="144" height="144" />
-  <h1>EdgeLedger 🎯</h1>
+  <h1>EdgeLedger 🚫</h1>
   <p><em>The agent that rejects your bet — pay 5¢, get a verdict, not a prediction.</em></p>
   <img src="docs/readme-hero-animated.svg" alt="EdgeLedger — the agent that rejects your bet. Pay 5 cents, get a verdict, not a prediction." width="100%">
 
