@@ -7,20 +7,20 @@
   <br/>
 
   [![API](https://img.shields.io/badge/API-live-2ea043?style=for-the-badge&logo=railway&logoColor=white)](https://api.edgeledger.edycu.dev/health)
-  [![Landing](https://img.shields.io/badge/Landing-deploy_pending-9e9e9e?style=for-the-badge&logo=github&logoColor=white)](https://edgeledger.edycu.dev)
-  [![Pitch Deck](https://img.shields.io/badge/Pitch_Deck-deploy_pending-9e9e9e?style=for-the-badge)](https://edgeledger.edycu.dev/pitch)
+  [![Landing](https://img.shields.io/badge/Landing-live-2ea043?style=for-the-badge&logo=github&logoColor=white)](https://edgeledger.edycu.dev)
+  [![Pitch Deck](https://img.shields.io/badge/Pitch_Deck-live-FF007A?style=for-the-badge)](https://edgeledger.edycu.dev/pitch)
   [![YouTube Demo](https://img.shields.io/badge/YouTube_Demo-coming_soon-9e9e9e?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/placeholder)
   [![HackQuest](https://img.shields.io/badge/HackQuest-listing_pending-9e9e9e?style=for-the-badge)](https://www.hackquest.io/hackathons/OKXAI-Genesis-Hackathon)
 
   <br/>
 
-  ![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=for-the-badge&logo=node.js&logoColor=white)
-  ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-  ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
-  ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
-  ![OKX x402](https://img.shields.io/badge/OKX-x402-000000?style=for-the-badge&logo=okx&logoColor=white)
-  ![X Layer](https://img.shields.io/badge/X_Layer-eip155:196-1F8AFF?style=for-the-badge)
-  ![USD₮0](https://img.shields.io/badge/USD%E2%82%AE0-zero--gas-26A17B?style=for-the-badge)
+  ![Node.js](https://img.shields.io/badge/Node.js_20-339933?logo=node.js&logoColor=white)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+  ![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)
+  ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white)
+  ![OKX x402](https://img.shields.io/badge/OKX-x402-000000?logo=okx&logoColor=white)
+  ![X Layer](https://img.shields.io/badge/X_Layer-eip155:196-1F8AFF)
+  ![USD₮0](https://img.shields.io/badge/USD%E2%82%AE0-zero--gas-26A17B)
   [![CI](https://github.com/edycutjong/edgeledger/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/edgeledger/actions/workflows/ci.yml)
 
 </div>
