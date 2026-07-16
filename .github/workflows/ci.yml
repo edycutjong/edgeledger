@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         # Full matrix on main push, single Node on PRs (saves CI minutes)
-        node-version: ${{ github.event_name == 'push' && fromJSON('[20, 22]') || fromJSON('[20]') }}
+        node-version: ${{ github.event_name == 'push' && fromJSON('[20, 22, 24]') || fromJSON('[20]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
