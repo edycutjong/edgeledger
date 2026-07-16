@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- EdgeLedger mark v3 (STATIC): the VERDICT SEAL.
+       Gold rows  = the public settled ledger (receipts, losses included).
+       Pink ring + strike = the rejection seal - the "no" that is the product.
+       This is the rest/base frame of icon-animated.svg with all motion removed.
+       Fully standalone: no scripts, no animation, no external refs.
+       Literal brand hex: #FF007A pink=REJECTED, #FFB300 gold=APPROVED, #0A0A12 base. -->
+  <title>EdgeLedger - verdict seal</title>
+  <defs>
+    <radialGradient id="elBg" cx="32%" cy="26%" r="90%">
+      <stop offset="0%" stop-color="#1D1226"/>
+      <stop offset="100%" stop-color="#0A0A12"/>
+    </radialGradient>
+    <radialGradient id="elSheen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="elHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF007A" stop-opacity="0.28"/>
+      <stop offset="70%" stop-color="#FF007A" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FF007A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="elRows" x1="116" y1="0" x2="396" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB300" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFB300" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="elSeal" x1="130" y1="382" x2="382" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF007A"/>
+      <stop offset="72%" stop-color="#FF3D96"/>
+      <stop offset="100%" stop-color="#FF6FB1"/>
+    </linearGradient>
+    <filter id="elGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="13" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="elTile"><rect x="16" y="16" width="480" height="480" rx="112"/></clipPath>
+  </defs>
+
+  <!-- tile -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#elBg)"/>
+  <rect x="22" y="22" width="468" height="468" rx="106" stroke="rgba(255,255,255,0.14)" stroke-width="6"/>
+
+  <!-- ambient atmosphere, clipped to the tile: static sheen + pink halo -->
+  <g clip-path="url(#elTile)">
+    <ellipse cx="256" cy="118" rx="230" ry="132" fill="url(#elSheen)"/>
+    <circle cx="256" cy="256" r="212" fill="url(#elHalo)" opacity="0.5"/>
+  </g>
+
+  <!-- settled ledger rows -->
+  <line x1="135" y1="183" x2="377" y2="183" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round"/>
+  <line x1="135" y1="256" x2="377" y2="256" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round" opacity="0.72"/>
+  <line x1="135" y1="329" x2="377" y2="329" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round" opacity="0.46"/>
+
+  <!-- settled dot punched into the top row -->
+  <circle cx="328" cy="183" r="26" fill="#FFB300"/>
+  <circle cx="328" cy="183" r="26" stroke="#0A0A12" stroke-width="9"/>
+
+  <!-- the verdict seal: rejection ring + strike -->
+  <g filter="url(#elGlow)">
+    <circle cx="256" cy="256" r="146" stroke="url(#elSeal)" stroke-width="42"/>
+    <path d="M158 158 L354 354" stroke="url(#elSeal)" stroke-width="42" stroke-linecap="round"/>
+  </g>
+</svg>

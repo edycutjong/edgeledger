@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-07-15T05:48:31.604Z",
+  "samples": 20,
+  "quote_ms": {
+    "p50": 0.95,
+    "p95": 4.04,
+    "min": 0.52,
+    "max": 4.46
+  },
+  "facilitator_confirm_ms": null,
+  "total_paid_ms": null,
+  "note": "quote_ms is the real unpaid 402 round-trip (in-process). Confirm/total are funds-gated — see DEMO.md."
+}

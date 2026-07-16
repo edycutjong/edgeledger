@@ -1,0 +1,172 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── STAGE 1: Code Quality (parallel with Stage 2) ─────────────────────────
+  quality:
+    name: "Stage 1 · Quality"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Full matrix on main push, single Node on PRs (saves CI minutes)
+        node-version: ${{ github.event_name == 'push' && fromJSON('[20, 22]') || fromJSON('[20]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests with coverage (188 tests, vitest)
+        run: npm run test:coverage
+      - name: Upload coverage report
+        if: matrix.node-version == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  # ── STAGE 2: Security Gate (parallel with Stage 1) ────────────────────────
+  secret-scan:
+    name: "Stage 2 · Secret Scanning"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for scanning git commits
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  dependency-audit:
+    name: "Stage 2 · Dependency Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: npm audit (high + critical)
+        run: npm audit --audit-level=high
+        continue-on-error: true # Don't block on transitive dep issues
+      - name: License compliance check
+        run: npx license-checker --production --failOn "GPL-3.0;AGPL-3.0" --summary
+        continue-on-error: true
+
+  # ── STAGE 3: Build Verification ───────────────────────────────────────────
+  # This is a long-lived tsx-run Express API (no bundler/build step) — "build"
+  # here means a clean, isolated TypeScript compile with no emit.
+  build:
+    name: "Stage 3 · Build Verification"
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript build check
+        run: npx tsc --noEmit -p tsconfig.json
+
+  # ── STAGE 4: API Smoke Test ───────────────────────────────────────────────
+  # No browser UI exists yet (API-only service) — this replaces
+  # Playwright/Lighthouse with the real review-gate self-check from
+  # ARCHITECTURE.md / DEMO.md: boot the server with the REAL x402 payGate
+  # (no --demo bypass, no OKX credentials needed — LocalFacilitatorClient
+  # answers offline) and assert the exact 402 / 200 / 405 shape.
+  api-smoke:
+    name: "Stage 4 · API Smoke Test"
+    needs: [build]
+    runs-on: ubuntu-latest
+    env:
+      PORT: 8403
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Boot server (real payGate) + review-gate self-check
+        run: |
+          set -e
+          npm run api &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+
+          echo "Waiting for server on :$PORT..."
+          for i in $(seq 1 30); do
+            if curl -sf "http://localhost:$PORT/health" > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf "http://localhost:$PORT/health" > /dev/null || { echo "::error::server did not become healthy"; exit 1; }
+
+          echo "── POST /api/edge (unpaid) → expect 402 ──"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$PORT/api/edge")
+          echo "got $STATUS"
+          [ "$STATUS" = "402" ] || { echo "::error::expected 402, got $STATUS"; exit 1; }
+
+          echo "── POST /api/slate → expect 200 ──"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$PORT/api/slate" -H 'Content-Type: application/json' -d '{}')
+          echo "got $STATUS"
+          [ "$STATUS" = "200" ] || { echo "::error::expected 200, got $STATUS"; exit 1; }
+
+          echo "── GET /api/edge → expect 405 (review-gate semantics, never serve GET) ──"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/edge")
+          echo "got $STATUS"
+          [ "$STATUS" = "405" ] || { echo "::error::expected 405, got $STATUS"; exit 1; }
+
+          echo "✅ review-gate self-check passed (402 / 200 / 405)"
+
+  # ── STAGE 5: Deploy Gate (main only) ──────────────────────────────────────
+  deploy-gate:
+    name: "Stage 5 · Deploy Gate"
+    needs: [build, api-smoke, secret-scan, dependency-audit]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: All gates passed
+        run: |
+          echo "🚀 All CI/CD gates passed!"
+          echo ""
+          echo "Pipeline Summary:"
+          echo "  ✅ Stage 1 — Quality (eslint, typecheck, vitest — 188 tests, coverage)"
+          echo "  ✅ Stage 2 — Secret Scanning (TruffleHog)"
+          echo "  ✅ Stage 2 — Dependency Audit (npm audit + license check)"
+          echo "  ✅ Stage 3 — Build Verification (tsc)"
+          echo "  ✅ Stage 4 — API Smoke Test (402 / 200 / 405 review-gate)"

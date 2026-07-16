@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EdgeLedger — the agent that rejects your bet</title>
+  <meta name="description" content="Pay 5¢, get a verdict, not a prediction. APPROVED / REJECTED / SKIP + edge grade + record-calibrated stake, with a public loss-inclusive ledger." />
+  <style>
+    /* Design tokens ported from docs/assets/_tokens.css (Bloomberg-SOC, hot-pink REJECTED / gold receipts) */
+    :root {
+      --primary: #FF007A; --accent: #FFB300;
+      --primary-glow: color-mix(in srgb, var(--primary) 35%, transparent);
+      --accent-glow: color-mix(in srgb, var(--accent) 35%, transparent);
+      --bg-base: #0A0A12;
+      --bg-elevated: #12121d;
+      --panel: #14141f;
+      --text-hi: #F2F3F7; --text-mid: #8B93A7; --text-low: #4A5065;
+      --border-subtle: rgba(255,255,255,0.08); --border-default: rgba(255,255,255,0.15);
+      --success: #22C55E; --warning: #F59E0B; --error: #EF4444; --info: #3B82F6;
+      --font-display: 'Space Grotesk','Inter',system-ui,sans-serif;
+      --font-ui: 'Inter',-apple-system,system-ui,sans-serif;
+      --font-mono: 'JetBrains Mono','SF Mono',ui-monospace,monospace;
+      --gradient-hero: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg-base);
+      background-image:
+        radial-gradient(ellipse 900px 600px at 15% 0%, var(--primary-glow) 0%, transparent 55%),
+        radial-gradient(ellipse 800px 550px at 90% 100%, var(--accent-glow) 0%, transparent 55%);
+      background-attachment: fixed;
+      color: var(--text-hi);
+      font-family: var(--font-ui);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+    a { color: var(--accent); }
+
+    /* Header */
+    header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+    .brand { display: flex; align-items: baseline; gap: 12px; }
+    .brand h1 { font-family: var(--font-display); font-size: 2rem; margin: 0; letter-spacing: -0.02em; }
+    .brand .dot { color: var(--primary); }
+    .tagline { color: var(--text-mid); font-size: 1.05rem; margin: 4px 0 0; }
+    .live { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-mid); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 5px 11px; background: var(--bg-elevated); }
+    .live .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 1.8s infinite; }
+    .live.off .pulse { background: var(--text-low); box-shadow: none; animation: none; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+    .rule { height: 1px; background: var(--border-subtle); margin: 22px 0 26px; }
+
+    /* Layout */
+    .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 860px) { .grid { grid-template-columns: 380px 1fr; align-items: start; } }
+
+    .panel { background: var(--panel); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; }
+    .panel h2 { font-family: var(--font-display); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-mid); margin: 0 0 14px; }
+
+    /* Form */
+    label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-mid); margin: 12px 0 5px; }
+    select, input {
+      width: 100%; background: var(--bg-base); color: var(--text-hi); border: 1px solid var(--border-default);
+      border-radius: 9px; padding: 10px 12px; font-family: var(--font-mono); font-size: 0.9rem;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--primary); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .presets { display: flex; gap: 8px; margin: 16px 0 4px; }
+    .presets button { flex: 1; }
+    button {
+      cursor: pointer; font-family: var(--font-ui); font-weight: 600; border-radius: 9px;
+      border: 1px solid var(--border-default); background: var(--bg-elevated); color: var(--text-hi);
+      padding: 11px 14px; font-size: 0.85rem; transition: transform .1s ease, border-color .15s ease;
+    }
+    button:hover { border-color: var(--primary); }
+    button:active { transform: translateY(1px); }
+    button.primary { width: 100%; margin-top: 16px; background: var(--gradient-hero); border: none; color: #0A0A12; font-size: 0.95rem; padding: 13px; }
+    .hint { font-size: 0.72rem; color: var(--text-low); margin-top: 10px; font-family: var(--font-mono); }
+
+    /* Verdict card */
+    #verdict { min-height: 280px; }
+    .vc-empty { color: var(--text-low); font-family: var(--font-mono); font-size: 0.85rem; display: flex; align-items: center; justify-content: center; height: 240px; text-align: center; }
+    .verdict-card { animation: rise .35s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .vc-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .vbadge { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.01em; padding: 6px 18px; border-radius: 12px; }
+    .vbadge.REJECTED { color: #fff; background: var(--primary); box-shadow: 0 0 30px var(--primary-glow); }
+    .vbadge.APPROVED { color: #0A0A12; background: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
+    .vbadge.SKIP { color: var(--text-hi); background: #2a2a3a; border: 1px solid var(--border-default); }
+    .grade-chip { font-family: var(--font-mono); font-weight: 700; font-size: 1.5rem; padding: 3px 12px; border-radius: 9px; border: 1px solid var(--border-default); }
+    .grade-A, .grade-Aplus { color: var(--success); border-color: var(--success); }
+    .grade-B, .grade-C { color: var(--warning); border-color: var(--warning); }
+    .grade-D, .grade-F { color: var(--primary); border-color: var(--primary); }
+    .vc-fixture { font-size: 0.95rem; color: var(--text-mid); margin: 16px 0 4px; }
+    .vc-fixture b { color: var(--text-hi); }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 18px 0; }
+    .metric { background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px; }
+    .metric .k { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-low); }
+    .metric .v { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 600; margin-top: 3px; }
+    .metric .v.pos { color: var(--success); } .metric .v.neg { color: var(--primary); }
+    .stake-line { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; }
+    .stake-line .big { font-size: 1.3rem; font-weight: 700; }
+    .similar { font-size: 0.82rem; color: var(--text-mid); }
+    .hash { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-low); word-break: break-all; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+    .hash b { color: var(--text-mid); }
+
+    /* 402 paywall card */
+    .paywall { border: 1px dashed var(--primary); border-radius: 12px; padding: 18px; background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .paywall .code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--primary); font-weight: 700; }
+    .accepts { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-mid); margin-top: 10px; }
+
+    /* Ledger */
+    .ledger-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+    .totals { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-mid); }
+    .table-scroll { overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { text-align: left; padding: 9px 12px; white-space: nowrap; }
+    thead th { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-low); border-bottom: 1px solid var(--border-subtle); }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); }
+    tbody tr:last-child { border-bottom: none; }
+    td.mono { font-family: var(--font-mono); }
+    .res-win { color: var(--success); font-weight: 600; }
+    .res-loss { color: var(--primary); font-weight: 600; }
+    .res-void { color: var(--text-low); }
+    .pnl-pos { color: var(--success); } .pnl-neg { color: var(--primary); }
+    .ph-tag { font-family: var(--font-mono); font-size: 0.6rem; color: var(--warning); border: 1px solid var(--warning); border-radius: 5px; padding: 1px 5px; }
+    .receipt { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-mid); }
+
+    footer { margin-top: 40px; color: var(--text-low); font-size: 0.76rem; line-height: 1.7; }
+    footer .honest { border-left: 2px solid var(--warning); padding-left: 12px; }
+    .err { color: var(--error); font-family: var(--font-mono); font-size: 0.85rem; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <div class="brand"><h1>EdgeLedger<span class="dot">.</span></h1></div>
+        <p class="tagline">Pay 5¢, get a <b>verdict</b> — not a prediction.</p>
+      </div>
+      <div id="status" class="live off"><span class="pulse"></span><span id="status-text">connecting…</span></div>
+    </header>
+
+    <div class="rule"></div>
+
+    <div class="grid">
+      <!-- LEFT: input + verdict -->
+      <div>
+        <div class="panel">
+          <h2>Validate a bet</h2>
+          <label for="fixture">Fixture</label>
+          <select id="fixture">
+            <option value="SF: FRA vs ESP">SF: FRA vs ESP</option>
+          </select>
+          <label for="selection">Your proposed bet</label>
+          <select id="selection">
+            <option value="Spain to advance">Spain to advance (the hype favorite)</option>
+            <option value="France to advance">France to advance (the value side)</option>
+          </select>
+          <div class="row2">
+            <div><label for="odds">Odds</label><input id="odds" type="number" step="0.01" value="1.45" /></div>
+            <div><label for="bankroll">Bankroll ($)</label><input id="bankroll" type="number" step="10" value="500" /></div>
+          </div>
+          <div class="presets">
+            <button type="button" data-preset="reject">😤 The hype bet</button>
+            <button type="button" data-preset="approve">💎 The value bet</button>
+          </div>
+          <button class="primary" id="ask">Ask permission to bet →</button>
+          <p class="hint">Hits the live API at <span id="origin"></span>/api/edge. In production this route is gated by a real $0.05 OKX x402 charge; served here in demo mode so the verdict renders without a wallet.</p>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+          <h2>The verdict</h2>
+          <div id="verdict"><div class="vc-empty">Ask permission to bet — the answer might be no.</div></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: public ledger -->
+      <div class="panel">
+        <div class="ledger-head">
+          <h2 style="margin:0;">Public settled ledger — losses included</h2>
+          <span class="totals" id="totals">loading…</span>
+        </div>
+        <p style="color:var(--text-mid); font-size:0.8rem; margin:4px 0 14px;">Every call graded before kickoff, kept whether it won or lost. A predict-only competitor can't fabricate this after the fact.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Fixture</th><th>Grade</th><th>Odds</th><th>Rung</th><th>Result</th><th>P&amp;L</th><th>CLV</th><th>Receipt</th></tr></thead>
+            <tbody id="ledger-body"><tr><td colspan="8" style="color:var(--text-low);padding:16px;">loading ledger…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p class="honest">
+        <b>Honest state (nothing faked):</b> the 24 ledger rows are <b>labeled placeholder</b> data (<code>is_placeholder=true</code>) ported from the sibling build's World Cup record — shown for shape, <b>excluded from ROI totals</b> (totals stay 0 until a real paid call settles on-chain). No live OKX Developer Portal credentials in this session, so no on-chain receipt has settled yet; receipts read <code>board:*</code>, not <code>xlayer:*</code>. The verdict engine, edge math, grade bands, and pick-hash are all real and covered by 188 tests.
+      </p>
+      <p>Built for OKX.AI Genesis 2026 · $0.05 per <code>POST /api/edge</code> via OKX x402 on X Layer · <a href="https://github.com/edycutjong/edgeledger">repo</a></p>
+    </footer>
+  </div>
+
+  <script>
+    const origin = location.origin;
+    document.getElementById('origin').textContent = origin;
+    const $ = (id) => document.getElementById(id);
+    const gradeClass = (g) => 'grade-' + (g === 'A+' ? 'Aplus' : (g || 'F').replace('+',''));
+
+    const presets = {
+      reject:  { selection: 'Spain to advance',  odds: 1.45, bankroll: 500 },
+      approve: { selection: 'France to advance', odds: 2.05, bankroll: 500 },
+    };
+    document.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => {
+      const p = presets[b.dataset.preset];
+      $('selection').value = p.selection; $('odds').value = p.odds; $('bankroll').value = p.bankroll;
+      askEdge();
+    }));
+
+    async function health() {
+      try {
+        const r = await fetch(origin + '/health');
+        const j = await r.json();
+        $('status').className = 'live';
+        $('status-text').textContent = `live · ${j.rows} rows · $${j.price_usd}/call · ${j.pay_rail}`;
+      } catch {
+        $('status-text').textContent = 'API offline — run: npm run api -- --demo';
+      }
+    }
+
+    function money(n) { return (n < 0 ? '-$' : '$') + Math.abs(n).toFixed(2); }
+    function pct(n) { return (n >= 0 ? '+' : '') + (n * 100).toFixed(1) + '%'; }
+
+    function renderPaywall(challenge) {
+      const a = (challenge.accepts || []).map((x) =>
+        `${x.extra?.name || x.asset} · ${(Number(x.amount)/1e6).toFixed(2)} · ${x.network}`).join('<br/>');
+      return `<div class="verdict-card"><div class="paywall">
+        <div class="code">HTTP 402 · PAYMENT REQUIRED · x402Version:${challenge.x402Version ?? 2}</div>
+        <p style="color:var(--text-mid);font-size:0.85rem;margin:10px 0 4px;">This is the <b>real</b> OKX x402 gate — the verdict engine never runs until 5¢ settles. Serve in demo mode (<code>--demo</code>) to render the verdict below.</p>
+        <div class="accepts">${a || 'USD₮0 / USDG · zero-gas · X Layer'}</div>
+      </div></div>`;
+    }
+
+    function renderVerdict(d) {
+      if (d.error) return `<div class="err">${d.error}: ${d.note || ''}</div>`;
+      const v = d.verdict;
+      const edge = typeof d.edge_pct === 'number' ? d.edge_pct : 0;
+      const ev = typeof d.ev_pct === 'number' ? d.ev_pct : null;
+      const stake = d.stake || {};
+      const sim = d.similar_settled || {};
+      const skip = v === 'SKIP';
+      return `<div class="verdict-card">
+        <div class="vc-head">
+          <span class="vbadge ${v}">${v}</span>
+          ${d.edge_grade ? `<span class="grade-chip ${gradeClass(d.edge_grade)}">${d.edge_grade}</span>` : ''}
+        </div>
+        <p class="vc-fixture"><b>${d.fixture}</b> — ${d.selection || ''}</p>
+        ${skip ? `<p class="similar">${d.note || 'No model coverage — refusing to fabricate an edge.'}</p>` : `
+        <div class="metrics">
+          <div class="metric"><div class="k">Edge</div><div class="v ${edge<0?'neg':'pos'}">${pct(edge)}</div></div>
+          <div class="metric"><div class="k">Fair prob</div><div class="v">${(d.fair_prob*100).toFixed(0)}%</div></div>
+          <div class="metric"><div class="k">Mkt implied</div><div class="v">${(d.market_implied*100).toFixed(0)}%</div></div>
+        </div>
+        <div class="stake-line">Recommended stake:
+          <span class="big">${money(stake.amount || 0)}</span>
+          <span style="color:var(--text-mid)"> · rung: ${stake.rung || 'pass'} · ${stake.pct || 0}% of bankroll</span>
+        </div>
+        <p class="similar">Similar settled (grade ${d.edge_grade}): <b>${sim.n||0}</b> calls · win rate ${((sim.win_rate||0)*100).toFixed(0)}% · ROI <b class="${(sim.roi_pct||0)<0?'pnl-neg':'pnl-pos'}">${pct(sim.roi_pct||0)}</b> · edge decays to half ~${d.decay_min_halflife||30}min pre-kickoff</p>
+        `}
+        <div class="hash"><b>pick_hash</b> (tamper-evident, timestamped by the x402 receipt):<br/>${d.pick_hash || ''}</div>
+      </div>`;
+    }
+
+    async function askEdge() {
+      $('verdict').innerHTML = '<div class="vc-empty">grading…</div>';
+      const body = {
+        fixture: $('fixture').value,
+        selection: $('selection').value,
+        odds: Number($('odds').value),
+        bankroll: Number($('bankroll').value),
+      };
+      try {
+        const r = await fetch(origin + '/api/edge', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        if (r.status === 402) {
+          let ch = {};
+          const h = r.headers.get('PAYMENT-REQUIRED');
+          if (h) { try { ch = JSON.parse(atob(h)); } catch {} }
+          $('verdict').innerHTML = renderPaywall(ch);
+          return;
+        }
+        const d = await r.json();
+        $('verdict').innerHTML = renderVerdict(d);
+      } catch (e) {
+        $('verdict').innerHTML = `<div class="err">Could not reach the API. Start it with: npm run api -- --demo</div>`;
+      }
+    }
+    $('ask').addEventListener('click', askEdge);
+
+    async function loadLedger() {
+      try {
+        const r = await fetch(origin + '/api/ledger', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+        });
+        const d = await r.json();
+        const rows = d.settled || [];
+        $('totals').innerHTML = `real settled: <b>${d.totals?.n ?? 0}</b> · ROI <b>${pct(d.totals?.roi_pct ?? 0)}</b> <span style="color:var(--text-low)">(placeholders excluded)</span>`;
+        $('ledger-body').innerHTML = rows.map((row) => {
+          const resCls = row.result === 'win' ? 'res-win' : row.result === 'loss' ? 'res-loss' : 'res-void';
+          const pnlCls = row.pnl > 0 ? 'pnl-pos' : row.pnl < 0 ? 'pnl-neg' : '';
+          return `<tr>
+            <td>${row.fixture}</td>
+            <td class="mono ${gradeClass(row.grade)}" style="font-weight:600;">${row.grade}</td>
+            <td class="mono">${row.odds}</td>
+            <td>${row.rung}</td>
+            <td class="${resCls}">${row.result.toUpperCase()}</td>
+            <td class="mono ${pnlCls}">${row.pnl>0?'+':''}${row.pnl}u</td>
+            <td class="mono">${(row.clv_pct*100).toFixed(1)}%</td>
+            <td class="receipt">${row.is_placeholder ? '<span class="ph-tag">placeholder</span> ' : ''}${row.receipt}</td>
+          </tr>`;
+        }).join('');
+      } catch {
+        $('ledger-body').innerHTML = '<tr><td colspan="8" class="err">ledger unavailable — start the API</td></tr>';
+      }
+    }
+
+    health();
+    loadLedger();
+    askEdge(); // auto-render the headline REJECTED on load
+  </script>
+</body>
+</html>

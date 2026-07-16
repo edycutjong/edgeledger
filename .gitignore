@@ -1,0 +1,32 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Environment variables ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Build / cache ────────────────────────────────────────────────────────────
+dist/
+*.tsbuildinfo
+.vitest-cache/
+
+# ── Test / coverage ──────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Local SQLite ledger (regenerable via `npm run settle` from fixtures/) ────
+db/*.sqlite
+db/*.sqlite-shm
+db/*.sqlite-wal
+db/*.sqlite-journal
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+npm-debug.log*
+*.log
+
+# ── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+.vscode/
+.idea/
+*.swp

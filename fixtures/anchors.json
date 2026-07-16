@@ -1,0 +1,154 @@
+{
+  "2026-06-14": {
+    "day": "2026-06-14",
+    "day_number": 20618,
+    "merkleRoot": "0xf4c239c17790934d5172d375d95b6dafe533902520e1cec8cf17458f1719e6d3",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-15": {
+    "day": "2026-06-15",
+    "day_number": 20619,
+    "merkleRoot": "0x784c57cd0e76fb0ca4fdc4ef44f308bc8b63eae507f4aa3e54b65384e9a0d8a4",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-16": {
+    "day": "2026-06-16",
+    "day_number": 20620,
+    "merkleRoot": "0x60505db95b3c50b7d43e2da9a42b64938b22565a320cdfd7ce97df86acb1379b",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-17": {
+    "day": "2026-06-17",
+    "day_number": 20621,
+    "merkleRoot": "0x12b099dd3938c105ff3b2711e375a4fa3c24a5e6437356dd6f7bfe6f0143e0e9",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-18": {
+    "day": "2026-06-18",
+    "day_number": 20622,
+    "merkleRoot": "0xdf7cc3073605eca45b3f662bff51334dadfdf368acb3971b8d347ab48ee8df06",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-19": {
+    "day": "2026-06-19",
+    "day_number": 20623,
+    "merkleRoot": "0xa7bb2b368b1c4d1cf7d1378516f8a6e8f0a9c9b55321c5c9aca67b295e1dce42",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-20": {
+    "day": "2026-06-20",
+    "day_number": 20624,
+    "merkleRoot": "0xfeebf4fe72ee72e2615e881453778bd3cf484ca2c5575f4a0f6a45554a75c8f5",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-21": {
+    "day": "2026-06-21",
+    "day_number": 20625,
+    "merkleRoot": "0x603eece1daf8124cb5d4a776a4088dd003a4a147715878add51c249f8ad4e8c7",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-22": {
+    "day": "2026-06-22",
+    "day_number": 20626,
+    "merkleRoot": "0xde6d2b76a4a01e479deac5eb3baf9a4cbbc2ce8296ba6530838d6f00073ad6c4",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-23": {
+    "day": "2026-06-23",
+    "day_number": 20627,
+    "merkleRoot": "0x800514e444a04dc9aa0442621ff871f3006b3f555a7aa540ced20d3083c18b16",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-29": {
+    "day": "2026-06-29",
+    "day_number": 20633,
+    "merkleRoot": "0x6c76108f9b1ab60ca81d9189b6a31948af4b0036c6a034e0e084767230764d13",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-06-30": {
+    "day": "2026-06-30",
+    "day_number": 20634,
+    "merkleRoot": "0x85c942a9d7861605af806f4733d960478782e3288484d611b93b29372e388a60",
+    "count": 2,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-01": {
+    "day": "2026-07-01",
+    "day_number": 20635,
+    "merkleRoot": "0x2f1138514a2586f3e90dd1c8beb1e942e56b0af4bf16ae5a6e9c2ec0d02a9390",
+    "count": 2,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-02": {
+    "day": "2026-07-02",
+    "day_number": 20636,
+    "merkleRoot": "0xb633e13207fb78d3ed453461ada59de37e8669368f2c8eae25289dc90ad3a21c",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-03": {
+    "day": "2026-07-03",
+    "day_number": 20637,
+    "merkleRoot": "0xff4292117d161d289a1c2dcf58b55777add06677a2f637187b03252e4d9d15ee",
+    "count": 2,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-09": {
+    "day": "2026-07-09",
+    "day_number": 20643,
+    "merkleRoot": "0xe7c9e6732acfa3e5d74e50c1632e62d56e872374553aebaa06dfd213f822104c",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-10": {
+    "day": "2026-07-10",
+    "day_number": 20644,
+    "merkleRoot": "0xfcd11708975e039d38a7fecf1c2c8f703ebae95cb15aa15e0583ba0872381d83",
+    "count": 2,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-11": {
+    "day": "2026-07-11",
+    "day_number": 20645,
+    "merkleRoot": "0xa515cf9ee4cb9ab2890b03a372e3f079ac8314a0a880c83c6d40ec6b108c699d",
+    "count": 1,
+    "tx": null,
+    "onchain": false
+  },
+  "2026-07-12": {
+    "day": "2026-07-12",
+    "day_number": 20646,
+    "merkleRoot": "0x0e8109e190fbff54085e8c2d9b9b92d3853b56aae2621818632fdd9ac9c2e986",
+    "count": 2,
+    "tx": null,
+    "onchain": false
+  }
+}

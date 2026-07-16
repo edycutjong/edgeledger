@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- EdgeLedger mark v3: the LIVING VERDICT SEAL.
+       Gold rows  = the public settled ledger (receipts, losses included).
+       Pink ring + strike = the rejection seal - the "no" that is the product.
+       Motion system (matches readme-hero-animated.svg language):
+         intro (plays once): ledger rows draw in via stroke-dash, settled dot
+         pops with overshoot, then the seal SLAMS in (spring overshoot) with a
+         tile quake + double pink shockwave, and the strike slashes through.
+         idle (seamless infinite): breathing pink halo, slow rotating sheen,
+         a gold energy comet orbiting the ring, a soft heartbeat micro-slam
+         with a sonar ping every 6s, and a gently pulsing settled dot.
+       The authored base state (no animation / reduced motion / PNG export
+       with animations disabled) is the complete polished static seal.
+       Fully standalone: CSS keyframes only, no scripts, no external refs.
+       Literal brand hex: #FF007A pink=REJECTED, #FFB300 gold=APPROVED, #0A0A12 base. -->
+  <title>EdgeLedger - verdict seal</title>
+  <defs>
+    <radialGradient id="elBg" cx="32%" cy="26%" r="90%">
+      <stop offset="0%" stop-color="#1D1226"/>
+      <stop offset="100%" stop-color="#0A0A12"/>
+    </radialGradient>
+    <radialGradient id="elHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF007A" stop-opacity="0.28"/>
+      <stop offset="70%" stop-color="#FF007A" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FF007A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="elSheen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="elRows" x1="116" y1="0" x2="396" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB300" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFB300" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="elSeal" x1="130" y1="382" x2="382" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF007A"/>
+      <stop offset="72%" stop-color="#FF3D96"/>
+      <stop offset="100%" stop-color="#FF6FB1"/>
+    </linearGradient>
+    <filter id="elGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="13" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="elTile"><rect x="16" y="16" width="480" height="480" rx="112"/></clipPath>
+  </defs>
+
+  <style>
+    /* authored base = final composed icon (static export + reduced motion) */
+    .quake { transform-box: view-box; transform-origin: 50% 50%; }
+    .spin  { transform-box: view-box; transform-origin: 50% 50%; }
+    .fb    { transform-box: fill-box; transform-origin: 50% 50%; }
+    .shock, .ping { opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; }
+    .comet { opacity: 0; }
+
+    /* intro: one-shot verdict choreography */
+    .r1 { animation: elRowIn 0.8s cubic-bezier(0.22,1,0.36,1) 0.05s both; }
+    .r2 { animation: elRowIn 0.8s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
+    .r3 { animation: elRowIn 0.8s cubic-bezier(0.22,1,0.36,1) 0.35s both; }
+    .dotPop  { animation: elDotPop 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.65s both; }
+    .sealSlam { animation: elSlam 0.75s cubic-bezier(0.34,1.56,0.64,1) 0.85s both; }
+    .strikeIn { animation: elStrike 0.4s cubic-bezier(0.16,1,0.3,1) 1.32s both; }
+    .quake    { animation: elQuake 0.5s ease-out 1.22s both; }
+    .shock.s1 { animation: elShock 0.9s cubic-bezier(0.16,1,0.3,1) 1.22s both; }
+    .shock.s2 { animation: elShock 0.9s cubic-bezier(0.16,1,0.3,1) 1.38s both; }
+
+    /* idle: seamless infinite life (starts after the intro settles) */
+    .halo     { animation: elHalo 6s ease-in-out 2s infinite; }
+    .spin     { animation: elSpin 14s linear infinite; }
+    .sealBeat { animation: elBeat 6s ease-in-out 2s infinite; }
+    .ping     { animation: elPing 6s cubic-bezier(0.16,1,0.3,1) 2s infinite; }
+    .comet    { animation: elComet 6s linear 2s infinite; }
+    .dotPulse { animation: elDotPulse 3s ease-in-out 2s infinite; }
+
+    @keyframes elRowIn {
+      0%   { stroke-dashoffset: 242; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes elDotPop {
+      0%   { opacity: 0; transform: scale(0); }
+      60%  { opacity: 1; transform: scale(1.28); }
+      80%  { transform: scale(0.94); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes elSlam {
+      0%   { opacity: 0; transform: scale(2.4) rotate(6deg); }
+      55%  { opacity: 1; transform: scale(0.9) rotate(0deg); }
+      72%  { transform: scale(1.07); }
+      86%  { transform: scale(0.985); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes elStrike {
+      0%   { stroke-dashoffset: 278; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes elQuake {
+      0%   { transform: none; }
+      25%  { transform: translate(-5px, 4px) rotate(-0.6deg); }
+      50%  { transform: translate(4px, -3px) rotate(0.45deg); }
+      75%  { transform: translate(-2px, 1.5px); }
+      100% { transform: none; }
+    }
+    @keyframes elShock {
+      0%   { opacity: 0; transform: scale(0.55); }
+      10%  { opacity: 0.9; transform: scale(0.62); }
+      100% { opacity: 0; transform: scale(1.55); }
+    }
+    @keyframes elHalo {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50%      { opacity: 0.85; transform: scale(1.08); }
+    }
+    @keyframes elSpin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes elBeat {
+      0%, 78%, 100% { transform: scale(1); }
+      84%           { transform: scale(1.045); }
+      90%           { transform: scale(0.99); }
+      95%           { transform: scale(1); }
+    }
+    @keyframes elPing {
+      0%, 80% { opacity: 0; transform: scale(0.8); }
+      84%     { opacity: 0.5; transform: scale(0.95); }
+      100%    { opacity: 0; transform: scale(1.5); }
+    }
+    @keyframes elComet {
+      0%   { opacity: 0; stroke-dashoffset: 917.35; }
+      8%   { opacity: 0.6; }
+      92%  { opacity: 0.6; }
+      100% { opacity: 0; stroke-dashoffset: 0; }
+    }
+    @keyframes elDotPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.12); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .r1, .r2, .r3, .dotPop, .sealSlam, .strikeIn, .quake,
+      .shock, .ping, .halo, .spin, .sealBeat, .comet, .dotPulse {
+        animation: none;
+      }
+    }
+  </style>
+
+  <!-- tile -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#elBg)"/>
+  <rect x="22" y="22" width="468" height="468" rx="106" stroke="rgba(255,255,255,0.14)" stroke-width="6"/>
+
+  <!-- ambient atmosphere, clipped to the tile: rotating sheen + breathing halo -->
+  <g clip-path="url(#elTile)">
+    <g class="spin">
+      <ellipse cx="256" cy="118" rx="230" ry="132" fill="url(#elSheen)"/>
+    </g>
+    <circle class="halo fb" cx="256" cy="256" r="212" fill="url(#elHalo)" opacity="0.5"/>
+  </g>
+
+  <g class="quake">
+    <!-- settled ledger rows (draw in via stroke-dash) -->
+    <line class="r1" x1="135" y1="183" x2="377" y2="183" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round" stroke-dasharray="242 484"/>
+    <line class="r2" x1="135" y1="256" x2="377" y2="256" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round" stroke-dasharray="242 484" opacity="0.72"/>
+    <line class="r3" x1="135" y1="329" x2="377" y2="329" stroke="url(#elRows)" stroke-width="38" stroke-linecap="round" stroke-dasharray="242 484" opacity="0.46"/>
+
+    <!-- settled dot punched into the top row: pops in, then pulses forever -->
+    <g class="dotPop fb">
+      <g class="dotPulse fb">
+        <circle cx="328" cy="183" r="26" fill="#FFB300"/>
+        <circle cx="328" cy="183" r="26" stroke="#0A0A12" stroke-width="9"/>
+      </g>
+    </g>
+
+    <!-- impact shockwaves (intro) + recurring sonar ping (idle) -->
+    <circle class="shock s1" cx="256" cy="256" r="146" stroke="#FF007A" stroke-width="10"/>
+    <circle class="shock s2" cx="256" cy="256" r="146" stroke="#FF007A" stroke-width="5"/>
+    <circle class="ping" cx="256" cy="256" r="146" stroke="#FFB300" stroke-width="6"/>
+
+    <!-- the verdict seal: ring slams in, strike slashes through, gold comet orbits -->
+    <g class="sealSlam fb">
+      <g class="sealBeat fb">
+        <g filter="url(#elGlow)">
+          <circle cx="256" cy="256" r="146" stroke="url(#elSeal)" stroke-width="42"/>
+          <circle class="comet" cx="256" cy="256" r="146" stroke="#FFB300" stroke-width="30" stroke-linecap="round" stroke-dasharray="76 841.35"/>
+          <path class="strikeIn" d="M158 158 L354 354" stroke="url(#elSeal)" stroke-width="42" stroke-linecap="round" stroke-dasharray="278 556"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

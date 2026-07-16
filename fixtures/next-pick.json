@@ -1,0 +1,11 @@
+{
+  "_note": "The sealed 'next pick' sold behind x402 POST /api/edge. Replaced live by football-data nextFixture + the-odds-api when the API can reach them; this is the deterministic fallback so the paid 200 payload always resolves. Semi-Final per the design mockup.",
+  "fixture": "SF: FRA vs ESP",
+  "competition": "FIFA World Cup 2026",
+  "stage": "SF",
+  "kickoff_utc": "2026-07-14T19:00:00Z",
+  "side": "HOME",
+  "side_label": "France to advance",
+  "model_prob": 0.58,
+  "market_odds": 2.05
+}

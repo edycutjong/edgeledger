@@ -1,0 +1,23 @@
+{
+  "_note": "The fixed set of fixtures/selections EdgeLedger has a fair-probability estimate for right now. PRD/COMPLEXITY explicitly rule out inventing a new per-request prediction model in this build ('accountability is the gap, not model novelty') — so /api/edge only ever grades a selection it has model coverage for here; everything else honestly SKIPs with reason='no_model_coverage' rather than fabricating a number. model_prob values are the same heuristic used for the ported seed ledger (fixtures/picks.csv), NOT a live ML feed. See DEMO.md.",
+  "picks": [
+    {
+      "fixture": "SF: FRA vs ESP",
+      "competition": "FIFA World Cup 2026",
+      "stage": "SF",
+      "kickoff_utc": "2026-07-14T19:00:00Z",
+      "side_label": "France to advance",
+      "model_prob": 0.58,
+      "reference_odds": 2.05
+    },
+    {
+      "fixture": "SF: FRA vs ESP",
+      "competition": "FIFA World Cup 2026",
+      "stage": "SF",
+      "kickoff_utc": "2026-07-14T19:00:00Z",
+      "side_label": "Spain to advance",
+      "model_prob": 0.62,
+      "reference_odds": 1.42
+    }
+  ]
+}
