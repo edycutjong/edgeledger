@@ -156,6 +156,14 @@ describe('data/odds — cache/live fetch, archive, and price selection', () => {
       headers: { get: () => null },
     }));
     vi.stubGlobal('fetch', fetchMock);
+    // A fresh git checkout (e.g. CI) resets committed-file mtimes to ~now, which
+    // would make the newest snapshot look "fresh" (< CACHE_TTL) and short-circuit
+    // to cache. Age every committed snapshot so the "stale committed cache"
+    // precondition holds deterministically regardless of checkout time.
+    const staleSec = (Date.now() - 60 * 60 * 1000) / 1000; // 1h ago
+    for (const f of fs.readdirSync(SNAP_DIR)) {
+      fs.utimesSync(path.join(SNAP_DIR, f), staleSec, staleSec);
+    }
     const { fetchWorldCupOdds: liveFetch } = await import('../data/odds');
     const res = await liveFetch(); // no force; committed snapshots are stale
     expect(res.source).toBe('live');
