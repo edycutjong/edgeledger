@@ -23,7 +23,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { buildOkxPayGate } from './rails/okx';
+import { buildOkxPayGate, warmFacilitator } from './rails/okx';
 import {
   edgeHandler, slateHandler, ledgerHandler, meHandler, receiptsVerifyHandler, healthHandler, getDb,
 } from './routes';
@@ -82,13 +82,18 @@ export function main(argv: string[] = process.argv): Server {
   const demo = argv.includes('--demo');
   const app = createApp({ demo });
   getDb(); // warm the ledger
-  return app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`EdgeLedger (OKX.AI edition) on http://localhost:${PORT} (rail=${PAY_RAIL})`);
     console.log(`  base url: ${API_BASE_URL}`);
     console.log(`  OKX Developer Portal credentials loaded: ${HAS_REAL_OKX_CREDS} (production settlement needs them — see DEMO.md)`);
     if (demo) console.log('  ⚠️  --demo: x402 gate DISABLED (paid payload rendered without payment)');
     console.log('  try: curl -i -X POST http://localhost:' + PORT + '/api/edge');
+    // Prime the facilitator handshake at boot (non-blocking) so the first paid
+    // /api/edge call is warm and cred/network errors show up here, not on a
+    // buyer's request — see warmFacilitator(). Skipped in --demo (no gate).
+    if (!demo && PAY_RAIL === 'okx') void warmFacilitator();
   });
+  return server;
 }
 
 /** Boot only when this module is the process entrypoint (`tsx api/server.ts`). */

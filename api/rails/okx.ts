@@ -117,6 +117,40 @@ export function buildOkxPayGate(): RequestHandler {
   return paymentMiddleware(buildRoutes(), server) as unknown as RequestHandler;
 }
 
+/**
+ * Boot-time facilitator warm-up + self-check.
+ *
+ * `paymentMiddleware` (syncFacilitatorOnStart=true) awaits the resource
+ * server's `initialize()` — a `facilitator.getSupported()` round-trip — on the
+ * FIRST gated `/api/edge` call. On mainnet that round-trip hits web3.okx.com;
+ * a cold DNS/TLS handshake there is exactly what OKX.AI's review can see as a
+ * timeout ("unable to receive a response … task timed out"). Running the same
+ * handshake at boot (a) primes Node's shared HTTP keep-alive/DNS/TLS so the
+ * middleware's first real call is warm, and (b) surfaces bad credentials or an
+ * unreachable/unsupported network in the deploy logs immediately instead of on
+ * a buyer's first paid call.
+ *
+ * Bounded and non-fatal: it never blocks the server from listening, and a
+ * failure is logged (the gate still retries the handshake per-request). Uses a
+ * throwaway resource-server instance purely to warm the connection pool.
+ */
+export async function warmFacilitator(timeoutMs = 8000): Promise<void> {
+  const label = HAS_REAL_OKX_CREDS ? 'OKXFacilitatorClient (live)' : 'LocalFacilitatorClient (local)';
+  try {
+    const server = buildResourceServer();
+    await Promise.race([
+      server.initialize(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`facilitator handshake exceeded ${timeoutMs}ms`)), timeoutMs).unref();
+      }),
+    ]);
+    console.log(`  x402 facilitator ready: ${label} on ${NET.caip2}`);
+  } catch (err) {
+    console.warn(`  ⚠️  x402 facilitator warm-up failed (${label} on ${NET.caip2}): ${(err as Error).message}`);
+    console.warn('     The first paid /api/edge call will retry the handshake; if this persists, verify OKX_* creds and that X402_NETWORK is a supported mainnet (eip155:196).');
+  }
+}
+
 /** The quote a buyer sees pre-flight — for docs/tests/DEMO.md, mirrors buildRoutes(). */
 export function quoteSummary() {
   const routes = buildRoutes() as Record<string, any>;

@@ -187,3 +187,48 @@ describe('okx.ts — real-credentials facilitator branch (isolated module reload
     vi.resetModules();
   });
 });
+
+describe('okx.ts — warmFacilitator() boot self-check', () => {
+  it('resolves and reports ready when the (local) facilitator handshake succeeds', async () => {
+    const { vi } = await import('vitest');
+    const { warmFacilitator } = await import('../api/rails/okx');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await expect(warmFacilitator()).resolves.toBeUndefined();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('x402 facilitator ready'));
+    log.mockRestore();
+  });
+
+  it('swallows a slow handshake via the bounded timeout (logs a warning, never throws)', async () => {
+    const { vi } = await import('vitest');
+    const { x402ResourceServer } = await import('@okxweb3/x402-core/server');
+    const { warmFacilitator } = await import('../api/rails/okx');
+    // Force initialize() slower than the timeout so the race rejects → catch branch.
+    const init = vi
+      .spyOn(x402ResourceServer.prototype, 'initialize')
+      .mockImplementation(() => new Promise<void>((resolve) => { setTimeout(resolve, 50); }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(warmFacilitator(1)).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('facilitator warm-up failed'));
+    init.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('reports the live-facilitator label when Developer Portal creds are present', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    vi.stubEnv('OKX_API_KEY', 'k');
+    vi.stubEnv('OKX_SECRET_KEY', 's');
+    vi.stubEnv('OKX_PASSPHRASE', 'p');
+    const { x402ResourceServer } = await import('@okxweb3/x402-core/server');
+    const { warmFacilitator } = await import('../api/rails/okx');
+    // Mock the handshake to succeed locally — no real web3.okx.com call.
+    const init = vi.spyOn(x402ResourceServer.prototype, 'initialize').mockResolvedValue(undefined);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await expect(warmFacilitator()).resolves.toBeUndefined();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('OKXFacilitatorClient (live)'));
+    init.mockRestore();
+    log.mockRestore();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+});
