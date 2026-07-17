@@ -40,6 +40,7 @@ import {
   NET,
   PAYTO_ADDRESS,
   PRICE_UNITS,
+  ASSET_DECIMALS,
   HAS_REAL_OKX_CREDS,
   OKX_API_KEY,
   OKX_SECRET_KEY,
@@ -79,7 +80,10 @@ export function buildRoutes(): RoutesConfig {
           payTo: PAYTO_ADDRESS,
           price: { asset: NET.usdt0, amount: PRICE_UNITS },
           maxTimeoutSeconds: 120,
-          extra: { assetTransferMethod: 'eip3009', name: 'USD₮0', version: '1' },
+          // `extra.decimals` is the OKX x402-core convention for token-decimals —
+          // required here because USD₮0 is not in OKX's token registry, so the
+          // x402-check resolver can't otherwise compute the human amount.
+          extra: { assetTransferMethod: 'eip3009', name: 'USD₮0', version: '1', decimals: ASSET_DECIMALS },
         },
         {
           scheme: 'exact',
@@ -87,7 +91,7 @@ export function buildRoutes(): RoutesConfig {
           payTo: PAYTO_ADDRESS,
           price: { asset: NET.usdg, amount: PRICE_UNITS },
           maxTimeoutSeconds: 120,
-          extra: { assetTransferMethod: 'eip3009', name: 'USDG', version: '1' },
+          extra: { assetTransferMethod: 'eip3009', name: 'USDG', version: '1', decimals: ASSET_DECIMALS },
         },
       ],
     },
