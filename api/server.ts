@@ -33,7 +33,7 @@ import { PORT, PAY_RAIL, API_BASE_URL, HAS_REAL_OKX_CREDS } from '../config';
 function cors(req: Request, res: Response, next: NextFunction): void {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-PAYMENT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-PAYMENT, PAYMENT-SIGNATURE');
   res.setHeader('Access-Control-Expose-Headers', 'PAYMENT-REQUIRED, PAYMENT-RESPONSE');
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
