@@ -153,12 +153,12 @@ describe('LocalFacilitatorClient.settle / getSettleStatus', () => {
 });
 
 describe('okx.ts — quoteSummary + facilitator selection', () => {
-  it('quoteSummary mirrors buildRoutes (dual accepts, local facilitator by default)', () => {
+  it('quoteSummary mirrors buildRoutes (single USD₮0 accept, local facilitator by default)', () => {
     const q = quoteSummary();
     expect(q.route).toBe(EDGE_ROUTE_KEY);
     expect(q.x402Version).toBe(2);
-    expect(q.accepts.length).toBe(2);
-    expect(q.accepts.map((a: any) => a.token_name).sort()).toEqual(['USDG', 'USD₮0']);
+    expect(q.accepts.length).toBe(1);
+    expect(q.accepts.map((a: any) => a.token_name)).toEqual(['USD₮0']);
     expect(q.accepts[0].amount_usd).toBeCloseTo(Number(PRICE_UNITS) / 1e6, 6);
     expect(q.facilitator).toMatch(/LocalFacilitatorClient/);
     // buildRoutes shape is internally consistent with the quote

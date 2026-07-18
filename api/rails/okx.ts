@@ -74,7 +74,17 @@ export function buildFacilitatorClient(): FacilitatorClient {
   return new LocalFacilitatorClient();
 }
 
-/** RoutesConfig for the gated endpoints — dual accepts (USD₮0 + USDG), both zero-gas. */
+/**
+ * RoutesConfig for the gated endpoints — SINGLE USD₮0 accept.
+ *
+ * The dual-accepts design (USD₮0 + USDG, 1.5) was reverted for listing review:
+ * the USDG contract is real on X Layer (0x4ae4…2dc8, symbol/decimals verified
+ * on-chain via rpc.xlayer.tech) but OKX's own resolver drops it — `onchainos
+ * payment quote` yields 1 candidate from the 2 accepts — and the marketplace's
+ * "x402 standard validation" kept failing this listing while the sibling CLV
+ * Scout listing (identical shape, single USD₮0 accept) passed the same round.
+ * Re-add the USDG entry once OKX's token registry resolves it.
+ */
 export function buildRoutes(): RoutesConfig {
   return {
     [EDGE_ROUTE_KEY]: {
@@ -91,14 +101,6 @@ export function buildRoutes(): RoutesConfig {
           // required here because USD₮0 is not in OKX's token registry, so the
           // x402-check resolver can't otherwise compute the human amount.
           extra: { assetTransferMethod: 'eip3009', name: 'USD₮0', version: '1', decimals: ASSET_DECIMALS },
-        },
-        {
-          scheme: 'exact',
-          network: NET.caip2,
-          payTo: PAYTO_ADDRESS,
-          price: { asset: NET.usdg, amount: PRICE_UNITS },
-          maxTimeoutSeconds: 300,
-          extra: { assetTransferMethod: 'eip3009', name: 'USDG', version: '1', decimals: ASSET_DECIMALS },
         },
       ],
     },

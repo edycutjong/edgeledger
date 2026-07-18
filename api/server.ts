@@ -55,9 +55,25 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
   // The SDK's browser sniff (Accept: text/html + Mozilla UA) swaps the 402 for
   // an HTML paywall WITHOUT the PAYMENT-REQUIRED header — and that header is
   // what OKX's marketplace validator checks ("x402 standard validation").
-  // Force the JSON+header path on the paid route for every client.
-  app.use('/api/edge', (req: Request, _res: Response, next: NextFunction) => {
+  // Force the JSON+header path on the paid route for every client. Also mirror
+  // the challenge into the 402 BODY: the SDK sends `{}` there, but validators
+  // that read the body see the full challenge (the sibling CLV Scout listing
+  // passes review with exactly this wire shape).
+  app.use('/api/edge', (req: Request, res: Response, next: NextFunction) => {
     req.headers.accept = 'application/json';
+    const origJson = res.json.bind(res);
+    res.json = (body?: unknown) => {
+      const hdr = res.getHeader('PAYMENT-REQUIRED');
+      const isEmpty = body == null || (typeof body === 'object' && Object.keys(body as object).length === 0);
+      if (res.statusCode === 402 && typeof hdr === 'string' && isEmpty) {
+        try {
+          return origJson(JSON.parse(Buffer.from(hdr, 'base64').toString('utf8')));
+        } catch {
+          /* fall through to the SDK body */
+        }
+      }
+      return origJson(body);
+    };
     next();
   });
 

@@ -50,13 +50,13 @@ describe('review-gate self-check (ARCHITECTURE §Endpoints, PRD success metrics)
     expect(res.status).toBe(402);
   });
 
-  it('the PAYMENT-REQUIRED response header carries a real x402 v2 PaymentRequired with dual USD₮0/USDG accepts', async () => {
+  it('the PAYMENT-REQUIRED response header carries a real x402 v2 PaymentRequired (single USD₮0 accept)', async () => {
     const res = await fetch(`${base}/api/edge`, { method: 'POST' });
     const parsed = decodePaymentRequired(res);
     expect(parsed).toBeTruthy();
     expect(parsed.x402Version).toBe(2);
     expect(Array.isArray(parsed.accepts)).toBe(true);
-    expect(parsed.accepts.length).toBe(2);
+    expect(parsed.accepts.length).toBe(1);
     for (const req of parsed.accepts) {
       expect(req.scheme).toBe('exact');
       expect(req.network).toBe(NET.caip2);
@@ -65,7 +65,7 @@ describe('review-gate self-check (ARCHITECTURE §Endpoints, PRD success metrics)
     }
     const assets = parsed.accepts.map((a: any) => a.asset.toLowerCase());
     expect(assets).toContain(NET.usdt0.toLowerCase());
-    expect(assets).toContain(NET.usdg.toLowerCase());
+    // USDG accept reverted for listing review — OKX's resolver drops it (see api/rails/okx.ts)
   });
 
   it('a malformed X-PAYMENT header is rejected, never crashes to 5xx', async () => {

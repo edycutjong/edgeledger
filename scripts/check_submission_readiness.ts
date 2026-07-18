@@ -37,7 +37,7 @@ async function live402(): Promise<{ ok: boolean; detail: string }> {
     const header = res.headers.get('payment-required');
     const body = header ? JSON.parse(Buffer.from(header, 'base64').toString('utf8')) : null;
     const hasVersion = body?.x402Version === 2;
-    const hasAccepts = Array.isArray(body?.accepts) && body.accepts.length >= 2;
+    const hasAccepts = Array.isArray(body?.accepts) && body.accepts.length >= 1;
     const amountOk = body?.accepts?.[0]?.amount === PRICE_UNITS;
     const ok = res.status === 402 && hasVersion && hasAccepts && amountOk;
     return { ok, detail: `HTTP ${res.status}, x402Version=${body?.x402Version}, accepts=${body?.accepts?.length}, amount=${body?.accepts?.[0]?.amount}` };
