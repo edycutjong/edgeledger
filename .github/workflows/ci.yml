@@ -103,7 +103,8 @@ jobs:
   # Playwright/Lighthouse with the real review-gate self-check from
   # ARCHITECTURE.md / DEMO.md: boot the server with the REAL x402 payGate
   # (no --demo bypass, no OKX credentials needed — LocalFacilitatorClient
-  # answers offline) and assert the exact 402 / 200 / 405 shape.
+  # answers offline) and assert the exact 402 / 200 / 402 shape (GET serves
+  # the same challenge as POST — OKX's review probe is a GET).
   api-smoke:
     name: "Stage 4 · API Smoke Test"
     needs: [build]
@@ -146,12 +147,13 @@ jobs:
           echo "got $STATUS"
           [ "$STATUS" = "200" ] || { echo "::error::expected 200, got $STATUS"; exit 1; }
 
-          echo "── GET /api/edge → expect 405 (review-gate semantics, never serve GET) ──"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/edge")
+          echo "── GET /api/edge (unpaid) → expect 402 challenge (OKX review probes with GET) ──"
+          STATUS=$(curl -s -D /tmp/edge-get-headers.txt -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/edge")
           echo "got $STATUS"
-          [ "$STATUS" = "405" ] || { echo "::error::expected 405, got $STATUS"; exit 1; }
+          [ "$STATUS" = "402" ] || { echo "::error::expected 402, got $STATUS"; exit 1; }
+          grep -qi '^payment-required:' /tmp/edge-get-headers.txt || { echo "::error::GET 402 missing PAYMENT-REQUIRED header"; exit 1; }
 
-          echo "✅ review-gate self-check passed (402 / 200 / 405)"
+          echo "✅ review-gate self-check passed (402 / 200 / 402+header)"
 
   # ── STAGE 5: Deploy Gate (main only) ──────────────────────────────────────
   deploy-gate:
@@ -169,4 +171,4 @@ jobs:
           echo "  ✅ Stage 2 — Secret Scanning (TruffleHog)"
           echo "  ✅ Stage 2 — Dependency Audit (npm audit + license check)"
           echo "  ✅ Stage 3 — Build Verification (tsc)"
-          echo "  ✅ Stage 4 — API Smoke Test (402 / 200 / 405 review-gate)"
+          echo "  ✅ Stage 4 — API Smoke Test (402 / 200 / 402+header review-gate)"

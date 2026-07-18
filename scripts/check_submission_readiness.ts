@@ -46,7 +46,8 @@ async function live402(): Promise<{ ok: boolean; detail: string }> {
   }
 }
 
-async function get405(): Promise<{ ok: boolean; detail: string }> {
+/** Unpaid GET must serve the same 402 challenge as POST — OKX's review probe is a GET. */
+async function getProbe402(): Promise<{ ok: boolean; detail: string }> {
   const app = createApp();
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -55,7 +56,8 @@ async function get405(): Promise<{ ok: boolean; detail: string }> {
     const addr = server.address();
     const port = typeof addr === 'object' && addr ? addr.port : 0;
     const res = await fetch(`http://127.0.0.1:${port}/api/edge`, { method: 'GET' });
-    return { ok: res.status === 405, detail: `HTTP ${res.status}` };
+    const hasHeader = !!res.headers.get('payment-required');
+    return { ok: res.status === 402 && hasHeader, detail: `HTTP ${res.status}, PAYMENT-REQUIRED header=${hasHeader}` };
   } finally {
     server.close();
   }
@@ -75,11 +77,11 @@ async function main(): Promise<void> {
   checks.push({ name: 'Ledger ≥ 20 settled rows', ok: rows >= 20, required: true, detail: `${rows} rows` });
   checks.push({ name: 'Losses kept public (I3 honesty)', ok: hasLoss, required: true, detail: hasLoss ? 'yes' : 'no losses found' });
 
-  // Live 402 / 405 review-gate self-check
+  // Live 402 review-gate self-check (POST + GET probe)
   const l = await live402();
   checks.push({ name: 'Live 402 quote (real okx middleware, x402Version:2)', ok: l.ok, required: true, detail: l.detail });
-  const g = await get405();
-  checks.push({ name: 'GET /api/edge → 405', ok: g.ok, required: true, detail: g.detail });
+  const g = await getProbe402();
+  checks.push({ name: 'GET /api/edge unpaid → 402 + PAYMENT-REQUIRED header', ok: g.ok, required: true, detail: g.detail });
 
   // Docs / artifacts
   checks.push({ name: 'DEMO.md', ok: exists('DEMO.md'), required: true, detail: '' });
