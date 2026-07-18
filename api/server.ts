@@ -52,6 +52,15 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
   app.use(cors);
   app.use(express.json());
 
+  // The SDK's browser sniff (Accept: text/html + Mozilla UA) swaps the 402 for
+  // an HTML paywall WITHOUT the PAYMENT-REQUIRED header — and that header is
+  // what OKX's marketplace validator checks ("x402 standard validation").
+  // Force the JSON+header path on the paid route for every client.
+  app.use('/api/edge', (req: Request, _res: Response, next: NextFunction) => {
+    req.headers.accept = 'application/json';
+    next();
+  });
+
   // x402 gate — only protects the routes in its own routes map (POST /api/edge).
   if (!opts.demo && PAY_RAIL === 'okx') {
     app.use(buildOkxPayGate());

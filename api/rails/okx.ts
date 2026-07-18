@@ -86,7 +86,7 @@ export function buildRoutes(): RoutesConfig {
           network: NET.caip2,
           payTo: PAYTO_ADDRESS,
           price: { asset: NET.usdt0, amount: PRICE_UNITS },
-          maxTimeoutSeconds: 120,
+          maxTimeoutSeconds: 300,
           // `extra.decimals` is the OKX x402-core convention for token-decimals —
           // required here because USD₮0 is not in OKX's token registry, so the
           // x402-check resolver can't otherwise compute the human amount.
@@ -97,7 +97,7 @@ export function buildRoutes(): RoutesConfig {
           network: NET.caip2,
           payTo: PAYTO_ADDRESS,
           price: { asset: NET.usdg, amount: PRICE_UNITS },
-          maxTimeoutSeconds: 120,
+          maxTimeoutSeconds: 300,
           extra: { assetTransferMethod: 'eip3009', name: 'USDG', version: '1', decimals: ASSET_DECIMALS },
         },
       ],
