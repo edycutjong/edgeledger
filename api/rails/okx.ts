@@ -48,7 +48,14 @@ import {
 } from '../../config';
 import { LocalFacilitatorClient } from './localFacilitator';
 
-export const EDGE_ROUTE_KEY = 'POST /api/edge';
+/**
+ * Method-less route pattern (x402-core `parseRoutePattern` verb `*`): the gate
+ * answers EVERY method on /api/edge with the 402 challenge, not just POST.
+ * OKX.AI's review probe (and `onchainos payment quote`) default to GET — a GET
+ * that returns 405 is classified as `endpoint_unreachable`, which is exactly
+ * what got this listing rejected. GET must produce the same challenge as POST.
+ */
+export const EDGE_ROUTE_KEY = '/api/edge';
 
 export const EDGE_DESCRIPTION =
   'EdgeLedger — validate a World Cup bet: verdict (APPROVED/REJECTED/SKIP), edge grade, ' +

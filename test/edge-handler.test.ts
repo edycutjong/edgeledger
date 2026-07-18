@@ -78,9 +78,13 @@ describe('POST /api/edge — unknown fixture (no model coverage)', () => {
     expect(body.stake.pct).toBe(0);
   });
 
-  it('missing fixture is a 400, not a fabricated response', async () => {
+  it('missing fixture is a 200 usage response (agent-runtime friendly), never a fabricated verdict', async () => {
     const res = await fetch(`${base}/api/edge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { service: string; example_request: unknown; verdict?: string };
+    expect(body.service).toBe('EdgeLedger Verdict');
+    expect(body.example_request).toBeTruthy();
+    expect(body.verdict).toBeUndefined();
   });
 });
 

@@ -77,9 +77,10 @@ describe('review-gate self-check (ARCHITECTURE §Endpoints, PRD success metrics)
     expect(res.status).not.toBe(200);
   });
 
-  it('GET /api/edge → HTTP 405 (never serves GET — observed live-ASP semantics)', async () => {
+  it('unpaid GET /api/edge → same 402 challenge as POST (OKX review probes with GET)', async () => {
     const res = await fetch(`${base}/api/edge`, { method: 'GET' });
-    expect(res.status).toBe(405);
+    expect(res.status).toBe(402);
+    expect(res.headers.get('PAYMENT-REQUIRED')).toBeTruthy();
   });
 
   it('POST /api/slate is free (200), no payment required', async () => {

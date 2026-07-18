@@ -94,7 +94,16 @@ export function edgeHandler(req: Request, res: Response): void {
   const fixture = (body.fixture ?? '').trim();
 
   if (!fixture) {
-    res.status(400).json({ error: 'fixture_required', note: 'body must include at least {fixture}' });
+    // Answer usefully instead of a bare 400: OKX.AI's agent runtime derives the
+    // call params from the service description, so its first paid call may
+    // arrive without a fixture — give it a copyable example to retry with.
+    res.status(200).json({
+      service: 'EdgeLedger Verdict',
+      note: 'no fixture provided — include at least {fixture}; add {selection, odds} for validate mode, optionally {bankroll, proposed_stake_pct}',
+      example_request: { fixture: 'FRA-BRA', selection: 'France ML', odds: 2.1, bankroll: 1000, proposed_stake_pct: 2 },
+      example_response_shape: { verdict: 'APPROVED | REJECTED | SKIP', edge_grade: 'A+…F', stake: '…', pick_hash: '…', receipts: '…' },
+      known_fixtures_hint: 'POST /api/slate (free) lists fixtures with model coverage',
+    });
     return;
   }
 

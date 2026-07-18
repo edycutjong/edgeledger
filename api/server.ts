@@ -6,7 +6,7 @@
  *   POST /api/ledger           free — settled history + anchor
  *   POST /api/me               free — BuyerLens read + forget
  *   POST /api/receipts/verify  free — independent facilitator re-check
- *   GET  /api/edge             405 (review-gate semantics — ARCHITECTURE §Endpoints)
+ *   GET  /api/edge             same x402 gate (OKX's review probe is a GET — 405 here read as "unreachable")
  *   GET  /health
  *
  * `demo` mode (createApp({ demo: true }) or `npm run api -- --demo`) disables
@@ -42,13 +42,13 @@ function cors(req: Request, res: Response, next: NextFunction): void {
   next();
 }
 
-function methodNotAllowed(_req: Request, res: Response): void {
-  res.status(405).json({ error: 'method_not_allowed', note: 'POST only — see ARCHITECTURE §Endpoints' });
-}
-
 export function createApp(opts: { demo?: boolean } = {}): express.Express {
   const app = express();
   app.disable('x-powered-by');
+  // Behind Railway's proxy `req.protocol` is "http" without this, which leaks
+  // an http:// resource.url into the x402 challenge the SDK builds from the
+  // request — OKX's validator compares it against the registered https endpoint.
+  app.set('trust proxy', true);
   app.use(cors);
   app.use(express.json());
 
@@ -58,7 +58,13 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
   }
 
   app.post('/api/edge', edgeHandler);
-  app.get('/api/edge', methodNotAllowed); // review-gate semantics: GET → 405, never serve GET
+  // Paid GET support: OKX's x402 client sends business params in the query
+  // string when the paid call is a GET. An unpaid GET never reaches here (the
+  // gate's method-less route answers it with the 402 challenge).
+  app.get('/api/edge', (req, res) => {
+    req.body = { ...req.query };
+    edgeHandler(req, res);
+  });
   app.post('/api/slate', slateHandler);
   app.post('/api/ledger', ledgerHandler);
   app.post('/api/me', meHandler);
