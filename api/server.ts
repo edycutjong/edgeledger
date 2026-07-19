@@ -61,6 +61,14 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
   // passes review with exactly this wire shape).
   app.use('/api/edge', (req: Request, res: Response, next: NextFunction) => {
     req.headers.accept = 'application/json';
+    // The SDK core's extractPayment() reads ONLY PAYMENT-SIGNATURE — despite
+    // its own "handles v1 and v2" comment it ignores X-PAYMENT entirely, so a
+    // v1-style payer gets re-402'd forever ("x402 validation failed" / "task
+    // timed out" in review). Same base64 PaymentPayload rides both headers;
+    // mirror v1 into the header the SDK actually reads.
+    if (!req.headers['payment-signature'] && req.headers['x-payment']) {
+      req.headers['payment-signature'] = req.headers['x-payment'];
+    }
     const origJson = res.json.bind(res);
     res.json = (body?: unknown) => {
       const hdr = res.getHeader('PAYMENT-REQUIRED');

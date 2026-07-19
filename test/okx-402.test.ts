@@ -77,6 +77,21 @@ describe('review-gate self-check (ARCHITECTURE §Endpoints, PRD success metrics)
     expect(res.status).not.toBe(200);
   });
 
+  it('v1 X-PAYMENT and v2 PAYMENT-SIGNATURE take the same verification path (SDK core only reads the latter — the server shims v1 across)', async () => {
+    // A syntactically valid PaymentPayload with a garbage signature: if the
+    // header is READ, it reaches verification (a distinct outcome from the
+    // ignored-header path, which would emit the plain unpaid challenge).
+    const payload = Buffer.from(JSON.stringify({
+      x402Version: 2,
+      accepted: { scheme: 'exact', network: 'eip155:196', asset: '0x779ded0c9e1022225f8e0630b35a9b54be713736', amount: '50000', payTo: '0x45078eD96C2bB171009A47a57aF5C085Bf4fD0e3', maxTimeoutSeconds: 300, extra: { name: 'USD₮0', version: '1' } },
+      payload: { signature: '0x' + 'ab'.repeat(65), authorization: { from: '0x' + '11'.repeat(20), to: '0x45078eD96C2bB171009A47a57aF5C085Bf4fD0e3', value: '50000', validAfter: '0', validBefore: '9999999999', nonce: '0x' + '22'.repeat(32) } },
+    })).toString('base64');
+    const viaV1 = await fetch(`${base}/api/edge`, { method: 'POST', headers: { 'X-PAYMENT': payload } });
+    const viaV2 = await fetch(`${base}/api/edge`, { method: 'POST', headers: { 'PAYMENT-SIGNATURE': payload } });
+    expect(viaV1.status).toBe(viaV2.status);
+    expect(viaV1.status).not.toBe(200); // invalid signature never unlocks the paid handler
+  });
+
   it('unpaid GET /api/edge → same 402 challenge as POST (OKX review probes with GET)', async () => {
     const res = await fetch(`${base}/api/edge`, { method: 'GET' });
     expect(res.status).toBe(402);
