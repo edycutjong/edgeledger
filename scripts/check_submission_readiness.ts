@@ -30,7 +30,13 @@ async function live402(): Promise<{ ok: boolean; detail: string }> {
   try {
     const addr = server.address();
     const port = typeof addr === 'object' && addr ? addr.port : 0;
-    const res = await fetch(`http://127.0.0.1:${port}/api/edge`, { method: 'POST' });
+    // A VALID body is required to earn a challenge — api/validate.ts validates
+    // ahead of the pay gate, so a param-less POST is answered 400 by design.
+    const res = await fetch(`http://127.0.0.1:${port}/api/edge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fixture: 'SF: FRA vs ESP' }),
+    });
     // The real x402ResourceServer's default unpaid response BODY is `{}` — the
     // challenge rides the base64 PAYMENT-REQUIRED header (ARCHITECTURE's
     // review-gate self-check: "header and/or JSON body").
