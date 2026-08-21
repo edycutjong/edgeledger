@@ -87,10 +87,11 @@ describe('api/routes handlers (direct, seeded DB)', () => {
     expect(decodeXPayment(makeReq({ headers: { 'x-payment': '@@@not-base64@@@' } }))).toBeNull();
   });
 
-  it('edgeHandler: missing fixture → 200 usage response (with an undefined body)', () => {
+  it('edgeHandler: missing fixture → 400 usage response (with an undefined body)', () => {
     const res = makeRes();
     edgeHandler(makeReq({ body: undefined }), res);
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
     expect(res.body.service).toBe('EdgeLedger Verdict');
     expect(res.body.verdict).toBeUndefined();
   });

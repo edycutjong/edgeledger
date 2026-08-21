@@ -137,10 +137,23 @@ jobs:
           done
           curl -sf "http://localhost:$PORT/health" > /dev/null || { echo "::error::server did not become healthy"; exit 1; }
 
-          echo "── POST /api/edge (unpaid) → expect 402 ──"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$PORT/api/edge")
+          # Params must be VALID to earn a challenge: api/validate.ts validates
+          # ahead of the pay gate, so a param-less POST is answered 400 by design.
+          echo "── POST /api/edge (valid params, unpaid) → expect 402 ──"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$PORT/api/edge" -H 'Content-Type: application/json' -d '{"fixture":"SF: FRA vs ESP"}')
           echo "got $STATUS"
           [ "$STATUS" = "402" ] || { echo "::error::expected 402, got $STATUS"; exit 1; }
+
+          # OKX.AI listing rule: validation completes BEFORE the challenge, so an
+          # invalid call gets 400 and must NOT carry a PAYMENT-REQUIRED header.
+          # Grep the header LINE — the CORS Access-Control-Expose-Headers line
+          # also contains that header's name.
+          echo "── POST /api/edge (missing params) → expect 400, no challenge ──"
+          STATUS=$(curl -s -D /tmp/edge-bad-headers.txt -o /tmp/edge-bad.json -w "%{http_code}" -X POST "http://localhost:$PORT/api/edge" -H 'Content-Type: application/json' -d '{}')
+          echo "got $STATUS"; cat /tmp/edge-bad.json
+          [ "$STATUS" = "400" ] || { echo "::error::expected 400, got $STATUS"; exit 1; }
+          grep -q '"error":"invalid_request"' /tmp/edge-bad.json || { echo "::error::400 body missing invalid_request"; exit 1; }
+          ! grep -qi '^payment-required:' /tmp/edge-bad-headers.txt || { echo "::error::400 must NOT carry a PAYMENT-REQUIRED challenge"; exit 1; }
 
           echo "── POST /api/slate → expect 200 ──"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$PORT/api/slate" -H 'Content-Type: application/json' -d '{}')
@@ -153,7 +166,7 @@ jobs:
           [ "$STATUS" = "402" ] || { echo "::error::expected 402, got $STATUS"; exit 1; }
           grep -qi '^payment-required:' /tmp/edge-get-headers.txt || { echo "::error::GET 402 missing PAYMENT-REQUIRED header"; exit 1; }
 
-          echo "✅ review-gate self-check passed (402 / 200 / 402+header)"
+          echo "✅ review-gate self-check passed (402 valid / 400 no-challenge / 200 free / 402+header GET)"
 
   # ── STAGE 5: Deploy Gate (main only) ──────────────────────────────────────
   deploy-gate:

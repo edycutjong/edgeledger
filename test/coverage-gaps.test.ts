@@ -42,8 +42,8 @@ afterAll(() => {
 describe('server.ts — GET /api/edge queryAsBody wrapper (demo mode, no gate)', () => {
   it('a GET /api/edge hydrates req.body from the query and reaches edgeHandler', async () => {
     const res = await fetch(`${demoBase}/api/edge`, { method: 'GET' });
-    // No fixture in the query → edgeHandler answers 200 with the usage example.
-    expect(res.status).toBe(200);
+    // No fixture in the query → edgeHandler answers 400 with the usage example.
+    expect(res.status).toBe(400);
     const body = (await res.json()) as { service: string };
     expect(body.service).toBe('EdgeLedger Verdict');
   });

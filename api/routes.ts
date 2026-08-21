@@ -20,6 +20,7 @@ import type { LedgerRow } from '../engine/types';
 import { findKnownPick, findKnownPicksForFixture, loadKnownPicks, type KnownPick } from '../data/knownPicks';
 import { PATHS, PRICE_USD_DISPLAY, HAS_REAL_OKX_CREDS } from '../config';
 import { buildFacilitatorClient } from './rails/okx';
+import { edgeRequestSchema, paramErrorBody } from './validate';
 
 // ── DB singleton, hydrated from the seeded ledger-state.json ────────────────
 let _db: DB | null = null;
@@ -90,22 +91,17 @@ function ledgerRowsAsMirror(rows: LedgerRow[]) {
 // ── POST /api/edge (paid) ────────────────────────────────────────────────────
 export function edgeHandler(req: Request, res: Response): void {
   const db = getDb();
-  const body = (req.body ?? {}) as { fixture?: string; selection?: string; odds?: number; bankroll?: number; proposed_stake_pct?: number };
-  const fixture = (body.fixture ?? '').trim();
 
-  if (!fixture) {
-    // Answer usefully instead of a bare 400: OKX.AI's agent runtime derives the
-    // call params from the service description, so its first paid call may
-    // arrive without a fixture — give it a copyable example to retry with.
-    res.status(200).json({
-      service: 'EdgeLedger Verdict',
-      note: 'no fixture provided — include at least {fixture}; add {selection, odds} for validate mode, optionally {bankroll, proposed_stake_pct}',
-      example_request: { fixture: 'FRA-BRA', selection: 'France ML', odds: 2.1, bankroll: 1000, proposed_stake_pct: 2 },
-      example_response_shape: { verdict: 'APPROVED | REJECTED | SKIP', edge_grade: 'A+…F', stake: '…', pick_hash: '…', receipts: '…' },
-      known_fixtures_hint: 'POST /api/slate (free) lists fixtures with model coverage',
-    });
+  // Parsed with the SAME schema api/validate.ts already enforced ahead of the
+  // pay gate (validation before payment). Reaching the 400 below means a caller
+  // bypassed the preflight — defence in depth, not the normal error path.
+  const parsed = edgeRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json(paramErrorBody(parsed.error.flatten()));
     return;
   }
+  const body = parsed.data;
+  const fixture = body.fixture;
 
   const mode: 'validate' | 'slate' = body.selection && typeof body.odds === 'number' ? 'validate' : 'slate';
 

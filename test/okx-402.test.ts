@@ -45,13 +45,35 @@ afterAll(() => {
 });
 
 describe('review-gate self-check (ARCHITECTURE §Endpoints, PRD success metrics)', () => {
-  it('POST /api/edge with no X-PAYMENT → HTTP 402', async () => {
-    const res = await fetch(`${base}/api/edge`, { method: 'POST' });
+  // Params must be VALID to earn a challenge: api/validate.ts validates ahead
+  // of the pay gate, so a param-less POST is answered 400 by design.
+  const VALID_BODY = { fixture: 'FRA-BRA', selection: 'France ML', odds: 2.1 };
+  const probe = () => fetch(`${base}/api/edge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(VALID_BODY),
+  });
+
+  it('POST /api/edge (valid params) with no X-PAYMENT → HTTP 402', async () => {
+    const res = await probe();
     expect(res.status).toBe(402);
   });
 
+  it('POST /api/edge with MISSING params → 400 and NO challenge (validation before payment)', async () => {
+    const res = await fetch(`${base}/api/edge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    expect(res.headers.get('PAYMENT-REQUIRED')).toBeNull();
+    const body = (await res.json()) as { error: string; payment: string };
+    expect(body.error).toBe('invalid_request');
+    expect(body.payment).toMatch(/nothing was deducted/i);
+  });
+
   it('the PAYMENT-REQUIRED response header carries a real x402 v2 PaymentRequired (single USD₮0 accept)', async () => {
-    const res = await fetch(`${base}/api/edge`, { method: 'POST' });
+    const res = await probe();
     const parsed = decodePaymentRequired(res);
     expect(parsed).toBeTruthy();
     expect(parsed.x402Version).toBe(2);

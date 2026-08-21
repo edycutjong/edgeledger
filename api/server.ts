@@ -24,6 +24,7 @@ import type { Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { buildOkxPayGate, warmFacilitator } from './rails/okx';
+import { paramPreflight } from './validate';
 import {
   edgeHandler, slateHandler, ledgerHandler, meHandler, receiptsVerifyHandler, healthHandler, getDb,
 } from './routes';
@@ -87,6 +88,12 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
 
   // x402 gate — only protects the routes in its own routes map (POST /api/edge).
   if (!opts.demo && PAY_RAIL === 'okx') {
+    // Business-parameter validation runs BEFORE the payment gate (OKX.AI
+    // listing requirement — the sibling CLV Scout listing was delisted for
+    // validating after deduction). An invalid call is answered 400 here, so
+    // the challenge is never issued and a caller that already holds a signed
+    // challenge is never verified and never settled. See api/validate.ts.
+    app.use(paramPreflight());
     app.use(buildOkxPayGate());
   }
 
