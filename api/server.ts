@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { buildOkxPayGate, warmFacilitator } from './rails/okx';
 import { paramPreflight } from './validate';
+import { buildCdpPayGateLazy, bazaarReadiness } from './rails/cdp';
 import {
   edgeHandler, slateHandler, ledgerHandler, meHandler, receiptsVerifyHandler, healthHandler, getDb,
 } from './routes';
@@ -87,14 +88,20 @@ export function createApp(opts: { demo?: boolean } = {}): express.Express {
   });
 
   // x402 gate — only protects the routes in its own routes map (POST /api/edge).
-  if (!opts.demo && PAY_RAIL === 'okx') {
+  //
+  // TWO RAILS, ONE PRODUCT. `PAY_RAIL=okx` settles USD₮0 on X Layer through the
+  // OKX facilitator (the OKX.AI listing). `PAY_RAIL=cdp` settles USDC on Base
+  // through the Coinbase facilitator and is auto-indexed by the x402 Bazaar.
+  // Everything below this line — preflight, handlers, engine, ledger — is
+  // identical on both; the venue is a rail swap. See api/rails/cdp.ts.
+  if (!opts.demo && (PAY_RAIL === 'okx' || PAY_RAIL === 'cdp')) {
     // Business-parameter validation runs BEFORE the payment gate (OKX.AI
     // listing requirement — the sibling CLV Scout listing was delisted for
     // validating after deduction). An invalid call is answered 400 here, so
     // the challenge is never issued and a caller that already holds a signed
     // challenge is never verified and never settled. See api/validate.ts.
     app.use(paramPreflight());
-    app.use(buildOkxPayGate());
+    app.use(PAY_RAIL === 'cdp' ? buildCdpPayGateLazy() : buildOkxPayGate());
   }
 
   app.post('/api/edge', edgeHandler);
@@ -134,6 +141,14 @@ export function main(argv: string[] = process.argv): Server {
     console.log(`  OKX Developer Portal credentials loaded: ${HAS_REAL_OKX_CREDS} (production settlement needs them — see DEMO.md)`);
     if (demo) console.log('  ⚠️  --demo: x402 gate DISABLED (paid payload rendered without payment)');
     console.log('  try: curl -i -X POST http://localhost:' + PORT + '/api/edge');
+    // Bazaar rail: print the remaining manual gates in the DEPLOY LOG rather
+    // than discovering them weeks later. This is the CLV Scout lesson — find
+    // the platform's own gates before the platform finds them for you.
+    if (!demo && PAY_RAIL === 'cdp') {
+      const r = bazaarReadiness();
+      console.log(`  x402 Bazaar rail — credentials ${r.ready ? 'OK' : 'MISSING'}; steps to a live listing:`);
+      for (const step of r.steps) console.log(`    - ${step}`);
+    }
     // Prime the facilitator handshake at boot (non-blocking) so the first paid
     // /api/edge call is warm and cred/network errors show up here, not on a
     // buyer's request — see warmFacilitator(). Skipped in --demo (no gate).
