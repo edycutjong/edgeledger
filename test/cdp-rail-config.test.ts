@@ -82,6 +82,11 @@ describe('the config handed to createX402Server IS the Bazaar listing', () => {
     expect(serialized).toContain('proposed_stake_pct');
     // and a worked example so a buying agent can construct a call
     expect(serialized).toContain('verdict');
+    // the example INSTANCE must satisfy the declared schema, or CDP's validator
+    // fails the listing with "(root).input.body: fixture is required"
+    const ext = JSON.parse(serialized) as Record<string, any>;
+    const info = JSON.parse(JSON.stringify(ext)).bazaar?.info ?? Object.values(ext)[0]?.info;
+    expect(info?.input?.body?.fixture).toBeTruthy();
   });
 
   it('honours CDP_PRICE and the development environment together', async () => {

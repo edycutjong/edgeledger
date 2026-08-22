@@ -71,6 +71,12 @@ function edgeDiscovery() {
   // (`POST /api/edge`), and DeclareDiscoveryExtensionInput omits the field.
   return declareDiscoveryExtension({
     bodyType: 'json',
+    // `input` is the example INSTANCE, `inputSchema` is the contract. Both are
+    // required: CDP's validator parses the recorded body against the declared
+    // schema, so omitting `input` leaves it `{}` and the listing fails its own
+    // `required: ["fixture"]` check with
+    // "v2 discovery extension validation failed: (root).input.body: fixture is required".
+    input: { fixture: 'SF: FRA vs ESP', selection: 'France ML', odds: 2.1 },
     inputSchema: {
       type: 'object',
       properties: {
