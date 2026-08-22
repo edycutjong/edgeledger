@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "EdgeLedger (OKX.AI edition) \u2014 the agent that rejects your bet. Pay-per-call World Cup bet validation over OKX x402 on X Layer + a free, loss-inclusive public ledger.",
+  "description": "EdgeLedger (OKX.AI edition) — the agent that rejects your bet. Pay-per-call World Cup bet validation over OKX x402 on X Layer + a free, loss-inclusive public ledger.",
   "engines": {
     "node": "20.x"
   },
@@ -48,12 +48,12 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.18.0",
     "globals": "^15.14.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   },
   "license": "MIT",
   "author": "Edy Cu (@edycutjong)",
@@ -78,5 +78,8 @@
     "typescript",
     "express",
     "better-sqlite3"
-  ]
+  ],
+  "overrides": {
+    "axios": "^1.18.0"
+  }
 }

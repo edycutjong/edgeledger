@@ -14,7 +14,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['engine/**', 'api/**', 'data/**', 'db/**', 'config.ts'],
+      // Restricted to *.ts on purpose. The bare `api/**` form also matched
+      // api/README.md, and from vitest 4 the v8 provider parses *uncovered*
+      // files to report them at 0% — so it tried to parse Markdown as
+      // JavaScript and logged a PARSE_ERROR on every run.
+      include: ['engine/**/*.ts', 'api/**/*.ts', 'data/**/*.ts', 'db/**/*.ts', 'config.ts'],
       // engine/types.ts is a declaration-only module (interfaces/type aliases). It is
       // fully erased by the TS transpiler and emits ZERO runtime statements, so there is
       // nothing executable to cover (v8 records s={}, f={}, b={}). It is excluded here
