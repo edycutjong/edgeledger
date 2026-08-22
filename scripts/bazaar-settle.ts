@@ -32,6 +32,7 @@
  * logged, or written to disk. Use a throwaway wallet funded with just enough
  * USDC — it only ever signs a transfer to our own payTo address.
  */
+import { execFileSync } from 'node:child_process';
 import { createPublicClient, http, formatUnits, encodeAbiParameters, keccak256 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -51,6 +52,54 @@ const AUTHORIZATION_TYPES = {
     { name: 'nonce', type: 'bytes32' },
   ],
 } as const;
+
+/**
+ * Sign the EIP-3009 authorization with the OKX Agentic Wallet instead of a raw
+ * private key. `onchainos wallet sign-message --type eip712` produces a
+ * genuine EIP-712 signature that recovers to the wallet address (verified), so
+ * the key never leaves OKX custody and nothing sensitive touches a shell.
+ * Preferred over --pk; use `--wallet <address>`.
+ */
+function signViaAgenticWallet(
+  from: string,
+  chainId: number,
+  domain: Record<string, unknown>,
+  message: Record<string, string>,
+): `0x${string}` {
+  const typedData = {
+    types: {
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+      TransferWithAuthorization: [
+        { name: 'from', type: 'address' },
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'validAfter', type: 'uint256' },
+        { name: 'validBefore', type: 'uint256' },
+        { name: 'nonce', type: 'bytes32' },
+      ],
+    },
+    primaryType: 'TransferWithAuthorization',
+    domain,
+    message,
+  };
+  const out = execFileSync(
+    'onchainos',
+    ['wallet', 'sign-message', '--type', 'eip712', '--chain', String(chainId),
+     '--from', from, '--message', JSON.stringify(typedData), '--force'],
+    { encoding: 'utf8', maxBuffer: 1024 * 1024 },
+  );
+  const parsed = JSON.parse(out.trim().split('\n').pop() as string) as
+    { ok?: boolean; data?: { signature?: string }; error?: string };
+  if (!parsed.ok || !parsed.data?.signature) {
+    throw new Error(`agentic wallet refused to sign: ${JSON.stringify(parsed).slice(0, 300)}`);
+  }
+  return parsed.data.signature as `0x${string}`;
+}
 
 const DEFAULT_URL = 'https://edgeledger-bazaar-production.up.railway.app/api/edge';
 const DEFAULT_BODY = { fixture: 'SF: FRA vs ESP', selection: 'France ML', odds: 2.1, bankroll: 500 };
@@ -114,24 +163,28 @@ async function main(): Promise<void> {
   console.log(`  scheme     : ${accept.scheme}`);
 
   // 2) buyer + balance ----------------------------------------------------
+  // Two signing modes. --wallet is preferred: the OKX Agentic Wallet signs the
+  // EIP-712 authorization itself, so no private key is ever exported or handled.
+  const walletAddr = argVal('--wallet');
   const buyerPk = normalizePk(process.env.BAZAAR_BUYER_PK);
-  if (!buyerPk) {
+  if (!walletAddr && !buyerPk) {
     console.log(`\n  buyer      : NOT CONFIGURED`);
-    console.log('\n✗ Set BAZAAR_BUYER_PK to a funded Base wallet private key (0x + 64 hex).');
-    console.log('  It signs one transfer, to our OWN payTo address above — use a throwaway key.');
+    console.log('\n✗ Choose a signer:');
+    console.log('    --wallet 0x…            sign with the OKX Agentic Wallet (no key export)');
+    console.log('    BAZAAR_BUYER_PK=0x…     sign locally with a raw private key');
     process.exit(dryRun ? 0 : 1);
   }
-  const account = privateKeyToAccount(buyerPk);
+  const buyerAddress = (walletAddr ?? privateKeyToAccount(buyerPk as `0x${string}`).address) as `0x${string}`;
   const rpc = process.env.BASE_RPC_URL ?? 'https://mainnet.base.org';
   const client = createPublicClient({ transport: http(rpc) });
   const balance = (await client.readContract({
     address: accept.asset,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
-    args: [account.address],
+    args: [buyerAddress],
   })) as bigint;
 
-  console.log(`  buyer      : ${account.address}`);
+  console.log(`  buyer      : ${buyerAddress}  (${walletAddr ? 'OKX Agentic Wallet' : 'local key'})`);
   console.log(`  balance    : ${formatUnits(balance, decimals)} USDC on Base`);
 
   if (balance < BigInt(accept.amount)) {
@@ -145,39 +198,49 @@ async function main(): Promise<void> {
   }
 
   // 3) sign ---------------------------------------------------------------
-  console.log('\n  Signing EIP-3009 authorization…');
+  console.log(`\n  Signing EIP-3009 authorization via ${walletAddr ? 'the OKX Agentic Wallet' : 'the local key'}…`);
   const now = Math.floor(Date.now() / 1000);
   const nonce = keccak256(
-    encodeAbiParameters([{ type: 'address' }, { type: 'uint256' }], [account.address, BigInt(now)]),
+    encodeAbiParameters([{ type: 'address' }, { type: 'uint256' }], [buyerAddress, BigInt(now)]),
   );
   const authorization = {
-    from: account.address,
+    from: buyerAddress,
     to: accept.payTo,
     value: accept.amount,
     validAfter: String(now - 60),
     validBefore: String(now + (accept.maxTimeoutSeconds ?? 300)),
     nonce,
   };
-  const signature = await account.signTypedData({
-    // domain comes from the CHALLENGE, not a constant — USDC on Base is
-    // {name: "USD Coin", version: "2"}, which differs from X Layer's USD₮0.
-    domain: {
-      name: accept.extra?.name ?? 'USD Coin',
-      version: accept.extra?.version ?? '2',
-      chainId,
-      verifyingContract: accept.asset,
-    },
-    types: AUTHORIZATION_TYPES,
-    primaryType: 'TransferWithAuthorization',
-    message: {
-      from: authorization.from,
-      to: authorization.to,
-      value: BigInt(authorization.value),
-      validAfter: BigInt(authorization.validAfter),
-      validBefore: BigInt(authorization.validBefore),
-      nonce: authorization.nonce,
-    },
-  });
+  // The domain comes from the CHALLENGE, not a constant — USDC on Base is
+  // {name: "USD Coin", version: "2"}, which differs from X Layer's USD₮0.
+  const domain = {
+    name: accept.extra?.name ?? 'USD Coin',
+    version: accept.extra?.version ?? '2',
+    chainId,
+    verifyingContract: accept.asset,
+  };
+  const signature = walletAddr
+    ? signViaAgenticWallet(buyerAddress, chainId, domain, {
+        from: authorization.from,
+        to: authorization.to,
+        value: authorization.value,
+        validAfter: authorization.validAfter,
+        validBefore: authorization.validBefore,
+        nonce: authorization.nonce,
+      })
+    : await privateKeyToAccount(buyerPk as `0x${string}`).signTypedData({
+        domain,
+        types: AUTHORIZATION_TYPES,
+        primaryType: 'TransferWithAuthorization',
+        message: {
+          from: authorization.from,
+          to: authorization.to,
+          value: BigInt(authorization.value),
+          validAfter: BigInt(authorization.validAfter),
+          validBefore: BigInt(authorization.validBefore),
+          nonce: authorization.nonce,
+        },
+      });
 
   const paymentPayload = Buffer.from(
     JSON.stringify({ x402Version: 2, accepted: accept, payload: { signature, authorization } }),
