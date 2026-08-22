@@ -53,7 +53,32 @@ export const NET = NETWORKS[ACTIVE_NETWORK];
 // ── Payment rail switch (ARCHITECTURE §Payment wiring) ───────────────────────
 /** `okx` is the only rail implemented in this Tier-1 build; the switch exists
  * so `api/server.ts` can select a rail without touching business logic. */
-export const PAY_RAIL = (process.env.PAY_RAIL ?? 'okx') as 'okx' | 'injective';
+export const PAY_RAIL = (process.env.PAY_RAIL ?? 'okx') as 'okx' | 'cdp' | 'injective';
+
+// ── x402 Bazaar rail (Coinbase CDP · Base · USDC) ───────────────────────────
+// A SECOND venue for the same product. x402 is a Linux Foundation standard, not
+// an OKX feature: the engine, ledger, preflight and handlers are venue-agnostic,
+// so reaching Base/Bazaar is a rail swap, not a rewrite. Selected with
+// PAY_RAIL=cdp; the OKX rail is untouched and stays the default.
+//
+// Bazaar discovery is automatic for EVM routes created through
+// `createX402Server` — but a listing only becomes DISCOVERABLE after the
+// endpoint is public HTTPS, passes POST /platform/v2/x402/validate, and has
+// completed one real settlement through the CDP facilitator.
+export const CDP_API_KEY_ID = process.env.CDP_API_KEY_ID ?? '';
+export const CDP_API_KEY_SECRET = process.env.CDP_API_KEY_SECRET ?? '';
+export const HAS_REAL_CDP_CREDS = !!(CDP_API_KEY_ID && CDP_API_KEY_SECRET);
+/** 'production' = Base mainnet + Solana mainnet · 'development' = Base Sepolia + Solana devnet. */
+export const CDP_ENV = (process.env.CDP_X402_SERVER_ENVIRONMENT ?? 'production') as 'production' | 'development';
+/**
+ * Price on the Bazaar rail, as an x402 amount string.
+ *
+ * Deliberately NOT $0.05. A full-market scan of OKX.AI (888 agents) found the
+ * >$10 band takes 52% of GMV on 1/68th of the volume, while 356 agents priced
+ * at a penny share $235 between them. See _notes/ASP_REVENUE_STRATEGY.md. This
+ * rail is the experiment that tests whether demand exists at a real price.
+ */
+export const CDP_PRICE = process.env.CDP_PRICE ?? '$15.00';
 
 // ── Pricing ─────────────────────────────────────────────────────────────────
 /** $0.05 in atomic 6dp units (USD₮0 / USDG both 6 decimals). */
