@@ -44,6 +44,7 @@
  */
 import type { Request, RequestHandler, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { PAY_RAIL } from '../config';
 
 /**
  * `fixture` is the only required param. `selection` + `odds` together switch the
@@ -125,9 +126,29 @@ export function paramPreflight(): RequestHandler {
 
     const params = paramsOf(req);
 
-    // Case 1: the marketplace reachability probe — an unpaid, param-less GET.
-    // Let the SDK answer it with the real challenge.
-    if (!isPaidRequest(req) && (req.method === 'GET' || req.method === 'HEAD') && hasNoParams(params)) {
+    // Case 1: the marketplace DISCOVERY PROBE — unpaid, and carrying no
+    // business params at all. Let the SDK answer it with the real challenge.
+    //
+    // Which shapes count as discovery is VENUE-SPECIFIC, because the two
+    // marketplaces disagree:
+    //
+    //  - OKX.AI requires parameter validation to complete BEFORE the challenge
+    //    is returned (CLV Scout was delisted for violating this). Its validator
+    //    sends business params — `onchainos agent x402-check --body '<json>'` —
+    //    so only a param-less GET needs the exception there.
+    //
+    //  - Coinbase's Bazaar validator probes with a param-less **POST** and
+    //    treats anything other than a 402 as a failure: every check comes back
+    //    "Skipped: endpoint did not return 402", and the service is never
+    //    indexed. So on the CDP rail a param-less POST is discovery too.
+    //
+    // Widening this does NOT weaken the OKX guarantee, which is about MONEY:
+    // a request that actually carries a payment is still validated before the
+    // gate (case 2), so an invalid call is never verified and never settled.
+    // A param-less probe receiving a quote costs nobody anything.
+    const isDiscoveryShape =
+      req.method === 'GET' || req.method === 'HEAD' || (PAY_RAIL === 'cdp' && req.method === 'POST');
+    if (!isPaidRequest(req) && isDiscoveryShape && hasNoParams(params)) {
       next();
       return;
     }

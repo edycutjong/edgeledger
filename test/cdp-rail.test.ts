@@ -127,3 +127,71 @@ describe('the Bazaar listing contract matches the server contract', () => {
     expect(okFull.success).toBe(true);
   });
 });
+
+describe('venue-specific discovery shape (the two marketplaces disagree)', () => {
+  // OKX.AI: validation must complete BEFORE the challenge — its validator sends
+  // params (`x402-check --body`). Coinbase Bazaar: probes with a param-less POST
+  // and fails the listing on anything that is not a 402 ("Skipped: endpoint did
+  // not return 402" on every check).
+  //
+  // Asserted on the PREFLIGHT DECISION itself rather than through the app: with
+  // dummy credentials the CDP gate cannot build, so an end-to-end 402 is not
+  // observable here. What matters is whether preflight hands the request on to
+  // the gate (discovery) or answers 400 itself (purchase attempt).
+  async function decide(rail: string, opts: { body?: unknown; method?: string; headers?: Record<string, string> } = {}) {
+    vi.resetModules();
+    process.env.PAY_RAIL = rail;
+    const { paramPreflight } = await import('../api/validate');
+    const gate = paramPreflight();
+    const req = {
+      path: '/api/edge',
+      method: opts.method ?? 'POST',
+      body: opts.body ?? {},
+      query: {},
+      headers: opts.headers ?? {},
+    };
+    return new Promise<{ passedToGate: boolean; status?: number; body?: Record<string, unknown> }>((resolve) => {
+      const res = {
+        statusCode: 0,
+        status(code: number) { this.statusCode = code; return this; },
+        json(payload: Record<string, unknown>) { resolve({ passedToGate: false, status: this.statusCode, body: payload }); return this; },
+      };
+      gate(req as never, res as never, (() => resolve({ passedToGate: true })) as never);
+    });
+  }
+
+  it('OKX rail: a param-less POST is a purchase attempt -> 400, never reaches the gate', async () => {
+    const r = await decide('okx', { body: {} });
+    expect(r.passedToGate).toBe(false);
+    expect(r.status).toBe(400);
+    expect(r.body?.error).toBe('invalid_request');
+  });
+
+  it('CDP rail: a param-less POST is the Bazaar validator probe -> passed to the gate for a 402', async () => {
+    const r = await decide('cdp', { body: {} });
+    expect(r.passedToGate).toBe(true);
+  });
+
+  it('both rails: a param-less GET is discovery', async () => {
+    expect((await decide('okx', { method: 'GET' })).passedToGate).toBe(true);
+    expect((await decide('cdp', { method: 'GET' })).passedToGate).toBe(true);
+  });
+
+  it('CDP rail: params present but INVALID is still 400, never a challenge', async () => {
+    const r = await decide('cdp', { body: { bankroll: 100 } }); // no fixture
+    expect(r.passedToGate).toBe(false);
+    expect(r.status).toBe(400);
+  });
+
+  it('CDP rail: THE DEDUCTION GUARANTEE HOLDS — a PAID param-less call is 400 before the gate', async () => {
+    const r = await decide('cdp', { body: {}, headers: { 'x-payment': 'base64-payload' } });
+    expect(r.passedToGate).toBe(false);
+    expect(r.status).toBe(400);
+    expect(String(r.body?.payment)).toMatch(/nothing was deducted/i);
+  });
+
+  it('CDP rail: valid params pass through to the gate as normal', async () => {
+    const r = await decide('cdp', { body: { fixture: 'SF: FRA vs ESP' } });
+    expect(r.passedToGate).toBe(true);
+  });
+});
