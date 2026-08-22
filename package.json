@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "EdgeLedger (OKX.AI edition) — the agent that rejects your bet. Pay-per-call World Cup bet validation over OKX x402 on X Layer + a free, loss-inclusive public ledger.",
+  "description": "EdgeLedger (OKX.AI edition) \u2014 the agent that rejects your bet. Pay-per-call World Cup bet validation over OKX x402 on X Layer + a free, loss-inclusive public ledger.",
   "engines": {
     "node": "20.x"
   },
@@ -24,7 +24,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --silent",
     "ci": "npm run lint && npm run typecheck && npm run test:coverage",
-    "bazaar-settle": "tsx scripts/bazaar-settle.ts"
+    "bazaar-settle": "tsx scripts/bazaar-settle.ts",
+    "bazaar-index": "tsx scripts/bazaar-index-check.ts"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.55.0",
